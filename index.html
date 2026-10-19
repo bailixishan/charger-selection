@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>充电桩选型表</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    :root {
+      --line: #d8dde4; --border: #aab2bd; --bg-head: #f4f6f8;
+      --accent: #1f6feb; --accent-soft: #eef4fd; --text: #2c3e50; --muted: #7a8694;
+      --danger: #e5484d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: #eef1f4; color: var(--text);
+      font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 980px; margin: 24px auto; padding: 0 16px 60px; }
+    h1 { margin: 0; padding: 20px 24px; font-size: 20px; letter-spacing: 2px; text-align: center;
+      background: linear-gradient(180deg,#fbfcfd,#f4f6f8); border-bottom: 2px solid var(--accent); }
+    .doc { background: #fff; border: 1px solid var(--line); border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(31,45,61,.08); overflow: hidden; }
+    .table { width: 100%; border-collapse: collapse; }
+    .table td { border: 1px solid var(--border); padding: 8px 10px; font-size: 14px; vertical-align: top; line-height: 1.6; }
+    .label { background: var(--bg-head); font-weight: 600; white-space: nowrap; width: 96px; text-align: center; }
+    .section { background: #eef4fd; font-weight: 700; text-align: center; font-size: 15px; letter-spacing: 1px; }
+    input[type="text"], textarea {
+      width: 100%; border: none; border-bottom: 1px solid var(--border); outline: none;
+      font-size: 14px; color: var(--text); padding: 2px 4px; background: transparent; font-family: inherit;
+    }
+    input[type="text"]:focus, textarea:focus { border-bottom-color: var(--accent); }
+    textarea { resize: vertical; min-height: 44px; }
+    .muted { color: var(--muted); font-size: 12px; }
+
+    .bar { display: flex; justify-content: center; gap: 16px; margin: 20px 0; }
+    button { font-family: inherit; cursor: pointer; }
+    .btn { padding: 10px 26px; font-size: 15px; border: none; border-radius: 8px; font-weight: 600; letter-spacing: 1px; }
+    .btn-print { background: var(--accent); color: #fff; }
+    .btn-reset { background: #fff; color: var(--text); border: 1px solid var(--border); }
+    .btn-add {
+      display: inline-flex; align-items: center; gap: 6px; margin: 12px;
+      padding: 9px 22px; font-size: 14px; border-radius: 6px; font-weight: 600;
+      background: #fff; color: var(--accent); border: 1px dashed var(--accent);
+    }
+    .btn-add:hover { background: var(--accent-soft); }
+    .add-row { text-align: center; }
+
+    .cards { padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+    .card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; background: #fbfcfd; position: relative; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .card-tag { font-size: 12px; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+    .card-ops { display: flex; gap: 8px; }
+    .card-ops button { font-size: 12px; border: 1px solid var(--border); background: #fff; border-radius: 4px; padding: 2px 10px; }
+    .card-ops .del { color: var(--danger); border-color: #f3c1c3; }
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+    .k { font-weight: 600; min-width: 64px; color: #4a5560; }
+    .v { color: var(--text); }
+
+    .grow { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin-top: 2px; }
+
+    .mask { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+    .modal { background: #fff; border-radius: 12px; width: 720px; max-width: 100%; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 16px 50px rgba(0,0,0,.25); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+    .modal-head b { font-size: 16px; }
+    .modal-head .x { font-size: 22px; line-height: 1; border: none; background: none; color: var(--muted); cursor: pointer; }
+    .modal-body { padding: 16px 20px; overflow-y: auto; }
+    .fld { margin-bottom: 14px; }
+    .fld > .ft { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .fld .tip { font-weight: 400; font-size: 12px; color: var(--muted); }
+    .modal-foot { display: flex; justify-content: flex-end; gap: 12px; padding: 14px 20px; border-top: 1px solid var(--line); }
+    .btn-primary { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 9px 22px; font-size: 14px; font-weight: 600; }
+    .btn-ghost { background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 9px 22px; font-size: 14px; }
+
+    /* 类型选择 */
+    .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 6px 0; }
+    .type-item { border: 1px solid var(--border); border-radius: 10px; padding: 18px 14px; text-align: center; cursor: pointer; transition: .15s; }
+    .type-item:hover { border-color: var(--accent); background: var(--accent-soft); }
+    .type-item .ti-name { font-size: 16px; font-weight: 700; }
+    .type-item .ti-desc { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+    .opt { display: inline-flex; align-items: center; gap: 4px; margin: 3px 12px 3px 0; white-space: nowrap; cursor: pointer; user-select: none; }
+    .opt .chk { display: inline-block; width: 15px; height: 15px; border: 1px solid var(--border); border-radius: 3px; background: #fff; margin-right: 4px; vertical-align: -2px; position: relative; flex-shrink: 0; }
+    .opt.on .chk { background: var(--accent); border-color: var(--accent); }
+    .opt.on .chk::after { content:""; position:absolute; left:4px; top:1px; width:4px; height:8px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+    .opt.radio .chk { border-radius: 50%; }
+    .opt.radio.on .chk::after { left:3px; top:3px; width:6px; height:6px; border:none; border-radius:50%; background:#fff; transform:none; }
+    .opt.disabled { cursor: not-allowed; opacity: .45; }
+    .other-input { width: 90px !important; margin-left: 2px; }
+
+    @media print {
+      body { background:#fff; } .wrap { margin:0; padding:0; max-width:none; }
+      .doc { box-shadow:none; border:none; border-radius:0; } .bar { display:none; }
+      .btn-add { display:none; } .mask { display:none; } .card-ops { display:none; }
+      @page { margin: 12mm; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="wrap" v-cloak>
+    <div class="bar">
+      <button class="btn btn-print" @click="doPrint">打印 / 另存为 PDF</button>
+      <button class="btn btn-reset" @click="doReset">清空重填</button>
+    </div>
+
+    <div class="doc">
+      <h1>充电桩选型表</h1>
+      <table class="table">
+        <tr>
+          <td class="label">用户单位</td><td><input type="text" v-model="form.userUnit"></td>
+          <td class="label">客户名称</td><td><input type="text" v-model="form.customer"></td>
+          <td class="label">项目名称</td><td><input type="text" v-model="form.project"></td>
+        </tr>
+        <tr>
+          <td class="label">订货日期</td><td><input type="text" v-model="form.orderDate"></td>
+          <td class="label">订货台数</td><td><input type="text" v-model="form.orderQty"></td>
+          <td class="label">交货日期</td><td><input type="text" v-model="form.deliveryDate"></td>
+        </tr>
+        <tr>
+          <td class="label">联系方式</td><td><input type="text" v-model="form.contact"></td>
+          <td class="label">项目地址</td><td><input type="text" v-model="form.address"></td>
+          <td class="label">交货日期</td><td><input type="text" v-model="form.deliveryDate2"></td>
+        </tr>
+
+        <!-- 全局运营方式 -->
+        <tr>
+          <td class="label" rowspan="5">运营方式<br><span class="muted">(全局)</span></td>
+          <td class="label" style="width:110px;">运行方式：</td>
+          <td colspan="4">
+            <span class="opt radio" :class="{on: globalOp.run==='standalone'}" @click="globalOp.run='standalone'"><span class="chk"></span>单机使用</span>
+            <span class="opt radio" :class="{on: globalOp.run==='network'}" @click="globalOp.run='network'"><span class="chk"></span>联网使用</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="label">单机方式：</td>
+          <td colspan="4">
+            <span class="opt radio" :class="{on: globalOp.single==='card'}" @click="globalOp.single='card'"><span class="chk"></span>刷卡启动（交流桩送二张卡）</span>
+            <span class="opt radio" :class="{on: globalOp.single==='other'}" @click="globalOp.single='other'"><span class="chk"></span>其他</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="label">联网方式：</td>
+          <td colspan="4">
+            <span class="opt radio" :class="{on: globalOp.net==='iot'}" @click="globalOp.net='iot'"><span class="chk"></span>物联网卡（免费送二年）</span>
+            <span class="opt radio" :class="{on: globalOp.net==='ethernet'}" @click="globalOp.net='ethernet'"><span class="chk"></span>以太网</span>
+            <span class="opt radio" :class="{on: globalOp.net==='other'}" @click="globalOp.net='other'"><span class="chk"></span>其他</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="label">平台选择：</td>
+          <td colspan="4">
+            <span class="opt radio" :class="{on: globalOp.platform==='yunkuai'}" @click="globalOp.platform='yunkuai'"><span class="chk"></span>默认（云快充）</span>
+            <span class="opt radio" :class="{on: globalOp.platform==='other'}" @click="globalOp.platform='other'"><span class="chk"></span>其他</span>
+            <input type="text" class="other-input" v-model="globalOp.platformOtherText" placeholder="____">
+          </td>
+        </tr>
+        <tr>
+          <td class="label">其他指定要求：</td>
+          <td colspan="4"><textarea v-model="globalOp.note" style="min-height:36px;"></textarea></td>
+        </tr>
+
+        <!-- 产品板块：有卡片才显示 -->
+        <template v-if="form.acWall.length">
+          <tr><td class="section" colspan="6">交流壁挂式</td></tr>
+          <tr><td colspan="6" style="padding:0;">
+            <div class="cards">
+              <div v-for="(c,i) in form.acWall" :key="c.id" class="card">
+                <div class="card-head">
+                  <span class="card-tag">壁挂式 #{{ i+1 }}</span>
+                  <span class="card-ops">
+                    <button @click="editCard('acWall', i)">编辑</button>
+                    <button class="del" @click="form.acWall.splice(i,1)">删除</button>
+                  </span>
+                </div>
+                <div class="row"><span class="k">功率：</span><span class="v">{{ powerLabel(c,'acWall') || '—' }}</span></div>
+                <div class="row"><span class="k">功能：</span><span class="v">{{ funcLabel(c) || '—' }}</span></div>
+                <div class="row"><span class="k">安装：</span><span class="v">{{ mountLabel(c,'acWall') || '—' }}</span></div>
+                <div class="row" v-if="c.qty || c.delivery"><span class="k">订货：</span><span class="v">{{ c.qty ? c.qty+' 台' : '' }}{{ c.qty && c.delivery ? ' · ' : '' }}{{ c.delivery ? '交货 '+c.delivery : '' }}</span></div>
+                <div class="row" v-if="c.note"><span class="k">备注：</span><span class="v">{{ c.note }}</span></div>
+                <div class="row"><span class="k">运营：</span><span class="v">{{ opLabel(c.op) }}</span></div>
+              </div>
+            </div>
+          </td></tr>
+        </template>
+
+        <template v-if="form.acInt.length">
+          <tr><td class="section" colspan="6">交流一体式</td></tr>
+          <tr><td colspan="6" style="padding:0;">
+            <div class="cards">
+              <div v-for="(c,i) in form.acInt" :key="c.id" class="card">
+                <div class="card-head">
+                  <span class="card-tag">一体式 #{{ i+1 }}</span>
+                  <span class="card-ops">
+                    <button @click="editCard('acInt', i)">编辑</button>
+                    <button class="del" @click="form.acInt.splice(i,1)">删除</button>
+                  </span>
+                </div>
+                <div class="row"><span class="k">功率：</span><span class="v">{{ powerLabel(c,'acInt') || '—' }}</span></div>
+                <div class="row"><span class="k">安装：</span><span class="v">{{ mountLabel(c,'acInt') || '—' }}</span></div>
+                <div class="row" v-if="c.note"><span class="k">备注：</span><span class="v">{{ c.note }}</span></div>
+                <div class="row"><span class="k">运营：</span><span class="v">{{ opLabel(c.op) }}</span></div>
+              </div>
+            </div>
+          </td></tr>
+        </template>
+
+        <template v-if="form.dc.length">
+          <tr><td class="section" colspan="6">直流一体桩</td></tr>
+          <tr><td colspan="6" style="padding:0;">
+            <div class="cards">
+              <div v-for="(c,i) in form.dc" :key="c.id" class="card">
+                <div class="card-head">
+                  <span class="card-tag">直流一体桩 #{{ i+1 }}</span>
+                  <span class="card-ops">
+                    <button @click="editCard('dc', i)">编辑</button>
+                    <button class="del" @click="form.dc.splice(i,1)">删除</button>
+                  </span>
+                </div>
+                <div class="row"><span class="k">功率：</span><span class="v">{{ powerLabel(c,'dc') || '—' }}</span></div>
+                <div class="row"><span class="k">枪数：</span><span class="v">{{ gunLabel(c) || '—' }}</span></div>
+                <div class="row"><span class="k">安装：</span><span class="v">{{ mountLabel(c,'dc') || '—' }}</span></div>
+                <div class="row"><span class="k">其他：</span><span class="v">{{ otherReqLabel(c) || '—' }}</span></div>
+                <div class="row" v-if="c.note"><span class="k">备注：</span><span class="v">{{ c.note }}</span></div>
+                <div class="row"><span class="k">运营：</span><span class="v">{{ opLabel(c.op) }}</span></div>
+              </div>
+            </div>
+          </td></tr>
+        </template>
+
+        <template v-if="form.group.length">
+          <tr><td class="section" colspan="6">群充产品</td></tr>
+          <tr><td colspan="6" style="padding:0;">
+            <div class="cards">
+              <div v-for="(c,i) in form.group" :key="c.id" class="card">
+                <div class="card-head">
+                  <span class="card-tag">群充 #{{ i+1 }}</span>
+                  <span class="card-ops">
+                    <button @click="editCard('group', i)">编辑</button>
+                    <button class="del" @click="form.group.splice(i,1)">删除</button>
+                  </span>
+                </div>
+                <div class="row"><span class="k">功率：</span><span class="v">{{ powerLabel(c,'group') || '—' }}</span></div>
+                <div class="row"><span class="k">终端：</span><span class="v">{{ termLabel(c) || '—' }}</span></div>
+              <div class="row"><span class="k">电流：</span><span class="v">{{ curLabel(c) || '—' }}</span></div>
+              <div class="row" v-if="c.stackQty || c.delivery"><span class="k">整堆：</span><span class="v">{{ c.stackQty ? c.stackQty+' 堆' : '' }}{{ c.stackQty && c.delivery ? ' · ' : '' }}{{ c.delivery ? '交货 '+c.delivery : '' }}</span></div>
+                <div class="row" v-if="c.note"><span class="k">其他：</span><span class="v">{{ c.note }}</span></div>
+                <div class="row"><span class="k">运营：</span><span class="v">{{ opLabel(c.op) }}</span></div>
+              </div>
+            </div>
+          </td></tr>
+        </template>
+
+        <!-- 新增产品 -->
+        <tr><td colspan="6" class="add-row">
+          <button class="btn-add" @click="startAdd">＋ 新增产品</button>
+          <div class="muted" style="padding-bottom:10px;" v-if="totalCount === 0">尚未添加产品，点击上方按钮选择产品类型</div>
+        </td></tr>
+
+        <!-- 特殊要求 -->
+        <tr><td class="section" colspan="6">特殊要求</td></tr>
+        <tr><td class="label">特殊要求</td><td colspan="5"><textarea v-model="form.special" style="min-height:80px;"></textarea></td></tr>
+      </table>
+    </div>
+
+    <div class="bar">
+      <button class="btn btn-print" @click="doPrint">打印 / 另存为 PDF</button>
+      <button class="btn btn-reset" @click="doReset">清空重填</button>
+    </div>
+
+    <!-- 新增/编辑弹窗 -->
+    <div class="mask" v-if="modal.open" @click.self="closeModal">
+      <div class="modal">
+        <div class="modal-head">
+          <b>{{ modal.title }}</b>
+          <button class="x" @click="closeModal">×</button>
+        </div>
+        <div class="modal-body">
+
+          <!-- 第一步：选产品类型 -->
+          <div v-if="!modal.type" class="type-grid">
+            <div class="type-item" @click="pickType('acWall')">
+              <div class="ti-name">交流壁挂式</div>
+              <div class="ti-desc">7kW圆梦款等，壁挂/带立柱安装</div>
+            </div>
+            <div class="type-item" @click="pickType('acInt')">
+              <div class="ti-name">交流一体式</div>
+              <div class="ti-desc">7kW / 14kW(双枪) 一体式</div>
+            </div>
+            <div class="type-item" @click="pickType('dc')">
+              <div class="ti-name">直流一体桩</div>
+              <div class="ti-desc">30kW~480kW，单枪/双枪</div>
+            </div>
+            <div class="type-item" @click="pickType('group')">
+              <div class="ti-name">群充产品</div>
+              <div class="ti-desc">360kW~960kW，风冷/液冷终端</div>
+            </div>
+          </div>
+
+          <!-- 第二步：填选项 -->
+          <template v-else>
+            <div style="margin-bottom:12px;">
+              <button class="btn-ghost" style="padding:4px 14px; font-size:13px;" v-if="modal.index < 0" @click="backToType">← 重选类型</button>
+            </div>
+
+            <template v-if="modal.type==='acWall'">
+              <div class="fld">
+                <div class="ft">功率</div>
+                <span class="opt radio" :class="{on: d.power==='7'}" @click="d.power='7'"><span class="chk"></span>7kW圆梦款</span>
+                <span class="opt radio" :class="{on: d.power==='other'}" @click="d.power='other'"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-model="d.powerOtherText" placeholder="____">
+              </div>
+              <div class="fld">
+                <div class="ft">功能</div>
+                <span class="opt radio" :class="{on: d.screen==='no'}" @click="d.screen='no'"><span class="chk"></span>不带屏幕</span>
+                <span class="opt radio" :class="{on: d.screen==='yes'}" @click="d.screen='yes'"><span class="chk"></span>带屏幕</span>
+                <span class="opt radio" :class="{on: d.g4==='no'}" @click="d.g4='no'"><span class="chk"></span>不带4G运营</span>
+                <span class="opt radio" :class="{on: d.g4==='yes'}" @click="d.g4='yes'"><span class="chk"></span>带4G运营</span>
+              </div>
+              <div class="fld">
+                <div class="ft">安装方式</div>
+                <span class="opt radio" :class="{on: d.mount==='wall'}" @click="d.mount='wall'"><span class="chk"></span>壁挂式</span>
+                <span class="opt radio" :class="{on: d.mount==='post'}" @click="d.mount='post'"><span class="chk"></span>带立柱</span>
+              </div>
+              <div class="fld">
+                <div class="ft">订货台数 / 交货日期</div>
+                <span class="opt" style="cursor:default;">台数 <input type="text" style="width:70px;" v-model="d.qty"></span>
+                <span class="opt" style="cursor:default;">交货 <input type="text" style="width:110px;" v-model="d.delivery"></span>
+              </div>
+              <div class="fld"><div class="ft">备注</div><textarea v-model="d.note"></textarea></div>
+            </template>
+
+            <template v-else-if="modal.type==='acInt'">
+              <div class="fld">
+                <div class="ft">功率</div>
+                <span class="opt radio" :class="{on: d.power==='7'}" @click="d.power='7'"><span class="chk"></span>7kW</span>
+                <span class="opt radio" :class="{on: d.power==='14'}" @click="d.power='14'"><span class="chk"></span>14kW(双枪)</span>
+                <span class="opt radio" :class="{on: d.power==='other'}" @click="d.power='other'"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-model="d.powerOtherText" placeholder="____">
+              </div>
+              <div class="fld"><div class="ft">安装方式</div>
+                <span class="opt radio" :class="{on: d.mount==='integrated'}" @click="d.mount='integrated'"><span class="chk"></span>一体式</span>
+              </div>
+              <div class="fld"><div class="ft">备注</div><textarea v-model="d.note"></textarea></div>
+            </template>
+
+            <template v-else-if="modal.type==='dc'">
+              <div class="fld">
+                <div class="ft">功率</div>
+                <span v-for="p in ['30','40','60','80','120','160','180','240','320','400','480']" :key="p" class="opt radio" :class="{on: d.power===p}" @click="setDcPower(p)"><span class="chk"></span>{{p}}kW</span>
+                <span class="opt radio" :class="{on: d.power==='other'}" @click="setDcPower('other')"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-model="d.powerOtherText" placeholder="____">
+              </div>
+              <div class="fld">
+                <div class="ft">枪数量 <span class="tip" v-if="dcSingleGunOnly">30kW/40kW 仅支持单枪</span></div>
+                <span class="opt radio" :class="{on: d.gun==='single'}" @click="setDcGun('single')"><span class="chk"></span>单枪</span>
+                <span class="opt radio" :class="{on: d.gun==='double', disabled: dcSingleGunOnly}" @click="setDcGun('double')"><span class="chk"></span>双枪</span>
+                <span class="opt radio" :class="{on: d.gun==='other', disabled: dcSingleGunOnly}" @click="setDcGun('other')"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-model="d.gunOtherText" :disabled="dcSingleGunOnly" placeholder="____">
+              </div>
+              <div class="fld">
+                <div class="ft">安装方式 <span class="tip" v-if="!dcCanWall">仅 30kW/40kW 可选壁挂式</span></div>
+                <span class="opt radio" :class="{on: d.mount==='wall', disabled: !dcCanWall}" @click="setDcMount('wall')"><span class="chk"></span>壁挂式（40KW以下）</span>
+                <span class="opt radio" :class="{on: d.mount==='post'}" @click="setDcMount('post')"><span class="chk"></span>立柱式</span>
+                <span class="opt radio" :class="{on: d.mount==='other'}" @click="setDcMount('other')"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-model="d.mountOtherText" placeholder="____">
+              </div>
+              <div class="fld">
+                <div class="ft">其他要求</div>
+                <span class="opt radio" :class="{on: d.otherReq==='default'}" @click="d.otherReq='default'"><span class="chk"></span>默认</span>
+                <span class="opt radio" :class="{on: d.otherReq==='other'}" @click="d.otherReq='other'"><span class="chk"></span>其他</span>
+              </div>
+              <div class="fld"><div class="ft">备注 <span class="tip">直流一体机双枪功率只能选偶数，特殊要求提前备注</span></div><textarea v-model="d.note"></textarea></div>
+            </template>
+
+            <template v-else-if="modal.type==='group'">
+              <div class="fld">
+                <div class="ft">功率</div>
+                <span v-for="p in ['360','480','600','720','960']" :key="p" class="opt radio" :class="{on: d.power===p}" @click="d.power=p"><span class="chk"></span>{{p}}kW</span>
+                <span class="opt radio" :class="{on: d.power==='other'}" @click="d.power='other'"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-model="d.powerOtherText" placeholder="____">
+              </div>
+              <div class="fld">
+                <div class="ft">终端类型</div>
+                <span class="opt radio" :class="{on: d.term==='singleAir'}" @click="d.term='singleAir'"><span class="chk"></span>单枪风冷</span>
+                <span class="opt radio" :class="{on: d.term==='doubleAir'}" @click="d.term='doubleAir'"><span class="chk"></span>双枪风冷</span>
+                <span class="opt radio" :class="{on: d.term==='singleLiquid'}" @click="d.term='singleLiquid'"><span class="chk"></span>单枪液冷</span>
+                <span class="opt radio" :class="{on: d.term==='other'}" @click="d.term='other'"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-model="d.termOtherText" placeholder="____">
+              </div>
+              <div class="fld">
+                <div class="ft">电流</div>
+                <span class="opt radio" :class="{on: d.airCur==='250'}" @click="d.airCur='250'"><span class="chk"></span>250A</span>
+                <span class="opt" style="cursor:default;">数量：<input type="text" style="width:70px;" v-model="d.airQty250"></span>
+                <span class="opt radio" :class="{on: d.airCur==='300'}" @click="d.airCur='300'"><span class="chk"></span>300A</span>
+                <span class="opt" style="cursor:default;">数量：<input type="text" style="width:70px;" v-model="d.airQty300"></span>
+                <span class="opt radio" :class="{on: d.liquidCur==='600'}" @click="d.liquidCur='600'"><span class="chk"></span>600A</span>
+                <span class="opt radio" :class="{on: d.liquidCur==='other'}" @click="d.liquidCur='other'"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-model="d.liquidCurOtherText" placeholder="____">
+                <span class="opt" style="cursor:default;">数量：<input type="text" style="width:70px;" v-model="d.liquidQty"></span>
+              </div>
+              <div class="fld">
+                <div class="ft">整堆数量 / 交货日期</div>
+                <span class="opt" style="cursor:default;">整堆数量：<input type="text" style="width:90px;" v-model="d.stackQty"></span>
+                <span class="opt" style="cursor:default;">交货日期：<input type="text" style="width:110px;" v-model="d.delivery"></span>
+              </div>
+              <div class="fld"><div class="ft">其他要求</div><textarea v-model="d.note"></textarea></div>
+            </template>
+
+            <!-- 运营方式 -->
+            <div class="fld" style="border-top:1px dashed var(--line); padding-top:12px;">
+              <div class="ft">
+                运营方式
+                <span class="tip" v-if="d.op && d.op.useGlobal">当前跟随全局运营方式</span>
+                <span class="tip" v-else>已单独设置</span>
+              </div>
+              <span class="opt radio" :class="{on: d.op && d.op.useGlobal}" @click="setOpGlobal()"><span class="chk"></span>跟随全局运营方式</span>
+              <span class="opt radio" :class="{on: !(d.op && d.op.useGlobal)}" @click="d.op.useGlobal=false"><span class="chk"></span>单独设置</span>
+              <div v-if="d.op && !d.op.useGlobal" style="margin-top:8px;">
+                <div class="grow" style="margin-top:4px;">
+                  <span class="k">运行方式：</span>
+                  <span class="opt radio" :class="{on: d.op.run==='standalone'}" @click="d.op.run='standalone'"><span class="chk"></span>单机使用</span>
+                  <span class="opt radio" :class="{on: d.op.run==='network'}" @click="d.op.run='network'"><span class="chk"></span>联网使用</span>
+                </div>
+                <div class="grow" style="margin-top:4px;">
+                  <span class="k">单机方式：</span>
+                  <span class="opt radio" :class="{on: d.op.single==='card'}" @click="d.op.single='card'"><span class="chk"></span>刷卡启动（交流桩送二张卡）</span>
+                  <span class="opt radio" :class="{on: d.op.single==='other'}" @click="d.op.single='other'"><span class="chk"></span>其他</span>
+                </div>
+                <div class="grow" style="margin-top:4px;">
+                  <span class="k">联网方式：</span>
+                  <span class="opt radio" :class="{on: d.op.net==='iot'}" @click="d.op.net='iot'"><span class="chk"></span>物联网卡（免费送二年）</span>
+                  <span class="opt radio" :class="{on: d.op.net==='ethernet'}" @click="d.op.net='ethernet'"><span class="chk"></span>以太网</span>
+                  <span class="opt radio" :class="{on: d.op.net==='other'}" @click="d.op.net='other'"><span class="chk"></span>其他</span>
+                </div>
+                <div class="grow" style="margin-top:4px;">
+                  <span class="k">平台选择：</span>
+                  <span class="opt radio" :class="{on: d.op.platform==='yunkuai'}" @click="d.op.platform='yunkuai'"><span class="chk"></span>默认（云快充）</span>
+                  <span class="opt radio" :class="{on: d.op.platform==='other'}" @click="d.op.platform='other'"><span class="chk"></span>其他</span>
+                  <input type="text" class="other-input" v-model="d.op.platformOtherText" placeholder="____">
+                </div>
+              </div>
+            </div>
+          </template>
+
+        </div>
+        <div class="modal-foot" v-if="modal.type">
+          <button class="btn-ghost" @click="closeModal">取消</button>
+          <button class="btn-primary" @click="confirmModal">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, reactive, computed } = Vue;
+    let uid = 0;
+    const nextId = () => 'c' + (++uid);
+
+    function newOp() {
+      return { useGlobal: true, run:'', single:'', net:'', platform:'', platformOtherText:'' };
+    }
+    function blankCard(type) {
+      switch(type) {
+        case 'acWall': return { id: nextId(), power:'7', powerOtherText:'', screen:'no', g4:'', mount:'wall', qty:'', delivery:'', note:'', op: newOp() };
+        case 'acInt': return { id: nextId(), power:'7', powerOtherText:'', mount:'integrated', note:'', op: newOp() };
+        case 'dc': return { id: nextId(), power:'60', powerOtherText:'', gun:'double', gunOtherText:'', mount:'post', mountOtherText:'', otherReq:'default', note:'', op: newOp() };
+        case 'group': return { id: nextId(), power:'480', powerOtherText:'', term:'doubleAir', termOtherText:'', airCur:'250', airQty250:'', airQty300:'', liquidCur:'', liquidQty:'', liquidCurOtherText:'', stackQty:'', delivery:'', note:'', op: newOp() };
+      }
+    }
+
+    function optText(key, value, otherText, map) {
+      if (value === 'other') return otherText ? ('其他：' + otherText) : '其他';
+      if (value && map && map[value]) return map[value];
+      return value || '';
+    }
+
+    createApp({
+      setup() {
+        const form = reactive({
+          userUnit:'', customer:'', project:'', orderDate:'', orderQty:'', deliveryDate:'',
+          contact:'', address:'', deliveryDate2:'',
+          acWall: [], acInt: [], dc: [], group: [], special:''
+        });
+        const globalOp = reactive({ run:'network', single:'card', net:'iot', platform:'yunkuai', platformOtherText:'', note:'' });
+        const modal = reactive({ open:false, type:'', index:-1, title:'' });
+        const d = reactive({});
+
+        const typeName = { acWall:'交流壁挂式', acInt:'交流一体式', dc:'直流一体桩', group:'群充产品' };
+        const totalCount = computed(() => form.acWall.length + form.acInt.length + form.dc.length + form.group.length);
+
+        // 直流桩联动规则：30/40kW 仅单枪；仅 30/40kW 可选壁挂
+        const dcSingleGunOnly = computed(() => d.power === '30' || d.power === '40');
+        const dcCanWall = computed(() => d.power === '30' || d.power === '40');
+        function setDcPower(p) {
+          d.power = p;
+          if (dcSingleGunOnly.value && d.gun !== 'single') d.gun = 'single';
+          if (!dcCanWall.value && d.mount === 'wall') d.mount = 'post';
+        }
+        function setDcGun(g) {
+          if (dcSingleGunOnly.value && g !== 'single') return;
+          d.gun = g;
+        }
+        function setDcMount(m) {
+          if (!dcCanWall.value && m === 'wall') return;
+          d.mount = m;
+        }
+
+        function startAdd() {
+          modal.type = ''; modal.index = -1;
+          modal.title = '新增产品 · 请选择类型';
+          modal.open = true;
+        }
+        function pickType(type) {
+          modal.type = type;
+          modal.index = -1;
+          modal.title = '新增 · ' + typeName[type];
+          Object.keys(d).forEach(k => delete d[k]);
+          const c = blankCard(type);
+          Object.assign(d, JSON.parse(JSON.stringify(c)));
+        }
+        function backToType() {
+          modal.type = '';
+          modal.title = '新增产品 · 请选择类型';
+        }
+        function editCard(type, i) {
+          modal.type = type; modal.index = i;
+          modal.title = '编辑 · ' + typeName[type];
+          const src = form[type][i];
+          Object.keys(d).forEach(k => delete d[k]);
+          Object.assign(d, JSON.parse(JSON.stringify(src)));
+          d.op = d.op || newOp();
+        }
+        function closeModal() { modal.open = false; }
+        function setOpGlobal() { d.op.useGlobal = true; }
+
+        function confirmModal() {
+          if (modal.index >= 0) {
+            const src = form[modal.type][modal.index];
+            Object.keys(src).forEach(k => delete src[k]);
+            Object.assign(src, JSON.parse(JSON.stringify(d)));
+          } else {
+            form[modal.type].push(JSON.parse(JSON.stringify(d)));
+          }
+          modal.open = false;
+        }
+
+        function powerLabel(c, type) {
+          if (type==='acWall') return optText('power', c.power, c.powerOtherText, { '7':'7kW圆梦款' });
+          if (type==='acInt') return optText('power', c.power, c.powerOtherText, { '7':'7kW', '14':'14kW(双枪)' });
+          if (type==='dc') return optText('power', c.power, c.powerOtherText, null) + (c.power && c.power!=='other' ? 'kW' : '');
+          if (type==='group') return optText('power', c.power, c.powerOtherText, null) + (c.power && c.power!=='other' ? 'kW' : '');
+          return '';
+        }
+        function funcLabel(c) {
+          const parts = [];
+          if (c.screen) parts.push(c.screen==='yes' ? '带屏幕' : '不带屏幕');
+          if (c.g4) parts.push(c.g4==='yes' ? '带4G运营' : '不带4G运营');
+          return parts.join(' / ');
+        }
+        function mountLabel(c, type) {
+          if (type==='acWall') return optText('mount', c.mount, '', { wall:'壁挂式', post:'带立柱' });
+          if (type==='acInt') return c.mount==='integrated' ? '一体式' : '';
+          if (type==='dc') return optText('mount', c.mount, c.mountOtherText, { wall:'壁挂式（40KW以下）', post:'立柱式' });
+          return '';
+        }
+        function gunLabel(c) { return optText('gun', c.gun, c.gunOtherText, { single:'单枪', double:'双枪' }); }
+        function otherReqLabel(c) { return c.otherReq==='default' ? '默认' : (c.otherReq==='other' ? '其他' : ''); }
+        function termLabel(c) { return optText('term', c.term, c.termOtherText, { singleAir:'单枪风冷', doubleAir:'双枪风冷', singleLiquid:'单枪液冷' }); }
+        function curLabel(c) {
+          const parts = [];
+          if (c.airCur === '250') parts.push('250A' + (c.airQty250 ? '×' + c.airQty250 : ''));
+          else if (c.airCur === '300') parts.push('300A' + (c.airQty300 ? '×' + c.airQty300 : ''));
+          if (c.liquidCur === '600') parts.push('600A' + (c.liquidQty ? '×' + c.liquidQty : ''));
+          else if (c.liquidCur === 'other') parts.push('其他' + (c.liquidCurOtherText ? '：' + c.liquidCurOtherText : '') + (c.liquidQty ? '×' + c.liquidQty : ''));
+          return parts.join(' · ');
+        }
+
+        function opLabel(op) {
+          if (!op) return '—';
+          if (op.useGlobal) return summarizeOp(globalOp) || '跟随全局（未选择）';
+          const parts = [];
+          if (op.run) parts.push(op.run==='standalone'?'单机':'联网');
+          if (op.single==='card') parts.push('刷卡启动');
+          if (op.net==='iot') parts.push('物联网卡');
+          else if (op.net==='ethernet') parts.push('以太网');
+          if (op.platform==='yunkuai') parts.push('云快充');
+          else if (op.platform==='other') parts.push('平台:'+(op.platformOtherText||'其他'));
+          return parts.length ? parts.join(' · ') : '—';
+        }
+        function summarizeOp(g) {
+          const parts = [];
+          if (g.run) parts.push(g.run==='standalone'?'单机':'联网');
+          if (g.single==='card') parts.push('刷卡启动');
+          else if (g.single==='other') parts.push('单机其他');
+          if (g.net==='iot') parts.push('物联网卡');
+          else if (g.net==='ethernet') parts.push('以太网');
+          else if (g.net==='other') parts.push('联网其他');
+          if (g.platform==='yunkuai') parts.push('云快充');
+          else if (g.platform==='other') parts.push('平台:'+(g.platformOtherText||'其他'));
+          return parts.length ? '跟随全局：' + parts.join(' · ') : '';
+        }
+
+        function doPrint() { window.print(); }
+        function doReset() {
+          Object.keys(form).forEach(k => {
+            if (Array.isArray(form[k])) form[k] = [];
+            else form[k] = '';
+          });
+          Object.assign(globalOp, { run:'network', single:'card', net:'iot', platform:'yunkuai', platformOtherText:'', note:'' });
+          modal.open = false;
+        }
+
+        return {
+          form, globalOp, modal, d, totalCount,
+          dcSingleGunOnly, dcCanWall,
+          startAdd, pickType, backToType, editCard, closeModal, confirmModal, setOpGlobal,
+          setDcPower, setDcGun, setDcMount,
+          doPrint, doReset,
+          powerLabel, funcLabel, mountLabel, gunLabel, otherReqLabel, termLabel, curLabel, opLabel
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
