@@ -95,6 +95,28 @@
       .btn-add { display:none; } .mask { display:none; } .card-ops { display:none; }
       @page { margin: 12mm; }
     }
+
+    /* 移动端适配 */
+    @media (max-width: 640px) {
+      .wrap { margin: 8px auto; padding: 0 8px 40px; }
+      .bar { gap: 10px; }
+      .btn { padding: 9px 16px; font-size: 14px; }
+      h1 { font-size: 17px; padding: 14px; }
+      .label { width: 78px; font-size: 12px; padding: 6px 4px; }
+      .table td { padding: 6px 6px; font-size: 13px; }
+      /* 顶部信息：手机上每个单元格占满一行，标签在左 */
+      .table tr.head-top td { display: block; width: 100% !important; text-align: left; border-bottom: none; }
+      .table tr.head-top td.label { display: inline-block; width: 84px !important; border: none; background: transparent; text-align: left; font-weight: 600; }
+      .table tr.head-top td:not(.label) { display: inline-block; width: calc(100% - 84px) !important; border: none; }
+      .table tr.head-top { display: block; border-bottom: 1px solid var(--line); padding: 4px 0; }
+      .table tr.head-top td input { width: 100%; }
+      /* 弹窗 */
+      .modal { width: 100%; max-height: 92vh; }
+      .type-grid { grid-template-columns: 1fr; }
+      .opt { margin-right: 10px; }
+      .other-input { width: 80px !important; }
+      .card-ops button { padding: 4px 10px; font-size: 13px; }
+    }
   </style>
 </head>
 <body>
@@ -107,17 +129,17 @@
     <div class="doc">
       <h1>充电桩选型表</h1>
       <table class="table">
-        <tr>
+        <tr class="head-top">
           <td class="label">用户单位</td><td><input type="text" v-model="form.userUnit"></td>
           <td class="label">客户名称</td><td><input type="text" v-model="form.customer"></td>
           <td class="label">项目名称</td><td><input type="text" v-model="form.project"></td>
         </tr>
-        <tr>
+        <tr class="head-top">
           <td class="label">订货日期</td><td><input type="text" v-model="form.orderDate"></td>
           <td class="label">订货台数</td><td><input type="text" v-model="form.orderQty"></td>
           <td class="label">交货日期</td><td><input type="text" v-model="form.deliveryDate"></td>
         </tr>
-        <tr>
+        <tr class="head-top">
           <td class="label">联系方式</td><td><input type="text" v-model="form.contact"></td>
           <td class="label">项目地址</td><td><input type="text" v-model="form.address"></td>
           <td class="label">交货日期</td><td><input type="text" v-model="form.deliveryDate2"></td>
