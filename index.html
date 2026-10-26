@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>充电桩选型表</title>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-    <style>
+  <script src="./vue.global.prod.js"></script>
+  <style>
     :root {
       --line: #e4e8ee;
       --border: #c9d1dc;
@@ -66,6 +66,12 @@
       padding: 2px 10px; border-radius: 999px; letter-spacing: 1px;
     }
     .op-hero .hero-head .desc { font-size: 12px; color: rgba(255,255,255,.75); }
+    .hero-done {
+      margin-left: auto; padding: 5px 16px; font-size: 13px; font-weight: 600;
+      color: var(--accent-deep); background: #fff; border: none; border-radius: 999px;
+      cursor: pointer; font-family: inherit; letter-spacing: 1px;
+    }
+    .hero-done:hover { background: #eaf1fe; }
     .op-hero .hero-grid {
       display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
       padding: 0 22px 18px;
@@ -77,6 +83,30 @@
     .op-cell.full { grid-column: 1 / -1; }
     .op-cell .ct { font-size: 12px; font-weight: 600; letter-spacing: 1px; color: rgba(255,255,255,.85); margin-bottom: 8px; }
     .op-cell .ct .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #7dd3fc; margin-right: 6px; vertical-align: 2px; }
+    /* 浅色版分块：弹窗内「其他指定要求」与全局同结构 */
+    .op-cell.light { background: #f6f9fe; border: 1px solid var(--border); margin-top: 10px; }
+    .op-cell.light .ct { color: var(--text-sub); margin-bottom: 8px; }
+    .op-cell.light .ct .dot { background: var(--accent); }
+    /* 弹窗内的浅色分块：紧贴上方的 .fld，下方留出与下一块的间距 */
+    .modal .op-cell.light { margin: -6px 0 14px; }
+    /* 弹窗内嵌套行：3C「不用符合」拆分明细 */
+    .op-cell.light .sub-row {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px;
+      padding: 2px 0;
+    }
+    .op-cell.light .sub-row + .sub-row { border-top: 1px dashed var(--line); margin-top: 2px; padding-top: 4px; }
+    .op-cell.light .sub-row .k {
+      min-width: 40px; font-size: 12px; font-weight: 600;
+      color: var(--text-sub); letter-spacing: 1px;
+    }
+    textarea.op-note-light {
+      width: 100%; border: none; border-bottom: 1.5px solid var(--border);
+      background: transparent; outline: none; resize: vertical;
+      font-size: 13px; color: var(--text); min-height: 38px; font-family: inherit;
+      padding: 4px 2px;
+    }
+    textarea.op-note-light::placeholder { color: #9aa6b6; }
+    textarea.op-note-light:focus { border-bottom-color: var(--accent); }
 
     /* 选中项胶囊（浅底页面通用） */
     .opt {
@@ -117,6 +147,11 @@
     .panel .other-input { color: var(--text); border-bottom-color: var(--border); }
     .panel .other-input::placeholder { color: #9aa6b6; }
     .panel .other-input:focus { border-bottom-color: var(--accent); }
+    /* 弹窗是白底，other-input 必须换成深色皮肤，否则白字白线看不见 */
+    .modal .other-input { color: var(--text); border-bottom-color: var(--border); }
+    .modal .other-input::placeholder { color: #9aa6b6; }
+    .modal .other-input:focus { border-bottom-color: var(--accent); }
+    .modal .other-input:disabled { color: #b6c0cd; border-bottom-color: var(--line); }
 
     textarea.op-note {
       width: 100%; border: none; border-bottom: 1.5px solid rgba(255,255,255,.4);
@@ -130,13 +165,63 @@
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 18px;
     }
     .info-item { display: flex; flex-direction: column; gap: 4px; }
-    .info-item .il { font-size: 12px; font-weight: 600; color: var(--text-sub); letter-spacing: 1px; }
-    .info-item input {
+    .info-item .il { font-size: 12px; font-weight: 600; color: var(--text-sub); letter-spacing: 1px; line-height: 17px; min-height: 17px; }
+    /* 统一所有控件盒模型：等高、同内边距，保证下划线在同一水平线 */
+    .info-item input,
+    .info-item .date-fake {
+      box-sizing: border-box; display: block;
+      width: 100%; height: 32px; padding: 0 2px;
       border: none; border-bottom: 1.5px solid var(--border);
       outline: none; font-size: 14px; color: var(--text);
-      padding: 5px 2px; background: transparent; font-family: inherit; width: 100%;
+      background: transparent; font-family: inherit; margin: 0;
     }
+    .info-item input:not([type="date"]) { -webkit-appearance: none; appearance: none; }
     .info-item input:focus { border-bottom-color: var(--accent); }
+    .info-item .req { color: var(--danger); font-style: normal; font-size: 12px; margin-left: 3px; }
+    .info-item input.err { border-bottom-color: var(--danger); }
+    .info-item input.err:focus { border-bottom-color: var(--danger); }
+    .info-item .emsg { font-size: 11px; color: var(--danger); margin-top: 2px; line-height: 1.3; }
+    .info-item input[type="date"] { min-height: 0; padding: 0 2px; }
+    .info-item input[type="number"]::-webkit-outer-spin-button,
+    .info-item input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .info-item input[type="number"] { -moz-appearance: textfield; }
+
+    /* 移动端日期假输入框：与真实输入框同高，下划线对齐 */
+    .info-item .date-fake {
+      display: flex; align-items: center;
+      cursor: pointer; overflow: hidden; white-space: nowrap;
+    }
+    .date-fake.empty { color: #9aa6b6; }
+    .date-fake.err { border-bottom-color: var(--danger); }
+    /* 弹窗里的日期假框（跟主页同一套滚轮，只是行内小尺寸） */
+    .modal .date-fake {
+      display: inline-block; border-bottom: 1.5px solid var(--border);
+      padding: 3px 2px; font-size: 13px; color: var(--text);
+      min-width: 140px; cursor: pointer; vertical-align: middle;
+    }
+    .modal .date-fake.empty { color: #9aa6b6; }
+    .modal .date-fake:active { border-bottom-color: var(--accent); }
+
+    /* 底部弹出日期滚轮 */
+    .dp-mask { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: flex; align-items: flex-end; z-index: 300; }
+    .dp-sheet {
+      width: 100%; background: #fff; border-radius: 18px 18px 0 0;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+      animation: dpUp .22s ease-out;
+    }
+    @keyframes dpUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .dp-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+    .dp-head b { font-size: 15px; font-weight: 600; }
+    .dp-cancel, .dp-ok { background: none; border: none; font-size: 15px; font-family: inherit; cursor: pointer; padding: 2px 4px; }
+    .dp-cancel { color: var(--text-sub); }
+    .dp-ok { color: var(--accent); font-weight: 600; }
+    .dp-cols { position: relative; display: flex; height: 200px; padding: 0 10px; }
+    .dp-col { flex: 1; overflow-y: scroll; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; position: relative; z-index: 1; }
+    .dp-col::-webkit-scrollbar { display: none; }
+    .dp-pad { height: 80px; }
+    .dp-cell { height: 40px; line-height: 40px; text-align: center; scroll-snap-align: center; font-size: 16px; color: #94a3b8; }
+    .dp-cell.active { color: var(--text); font-weight: 600; }
+    .dp-band { position: absolute; left: 10px; right: 10px; top: 80px; height: 40px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); pointer-events: none; z-index: 0; }
 
     /* ===== 产品板块卡片 ===== */
     .section-panel .cards { display: flex; flex-direction: column; gap: 10px; }
@@ -198,17 +283,57 @@
     .fld .tip { font-weight: 400; font-size: 12px; color: var(--text-sub); }
     .fld textarea { width: 100%; border: none; border-bottom: 1.5px solid var(--border); outline: none; resize: vertical; min-height: 44px; font-size: 13px; color: var(--text); background: transparent; font-family: inherit; }
     .fld textarea:focus { border-bottom-color: var(--accent); }
+
+    /* 群充终端配置清单 */
+    .term-list {
+      border: 1px solid var(--border); border-radius: 10px;
+      overflow: hidden; background: #fbfcfe;
+    }
+    .term-row { display: flex; align-items: center; gap: 10px; padding: 7px 12px; }
+    .term-row + .term-row { border-top: 1px dashed var(--line); }
+    .term-name { flex: 1; font-size: 13px; color: var(--text); }
+    .term-row .term-qty { width: 62px; text-align: center; flex: 0 0 auto; }
+    .term-unit { font-size: 12px; color: var(--text-sub); }
+    .term-sum { margin-top: 9px; font-size: 12px; color: var(--text-sub); }
+    .term-sum b { color: var(--accent-deep); font-weight: 600; font-size: 13px; margin: 0 2px; }
+    .term-sum .dot-sep { margin: 0 8px; opacity: .5; }
+    /* 枪数合计超出主柜枪数 */
+    .term-sum.over { color: var(--danger); }
+    .term-sum.over b { color: var(--danger); }
+    .term-sum .over-tip { display: block; margin-top: 5px; color: var(--danger); font-weight: 600; }
+    .term-list.over { border-color: var(--danger); }
     .grow { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin-top: 4px; }
     .grow .k { font-weight: 600; min-width: 64px; color: var(--text-sub); }
     /* 终端类型一行 */
-    .opt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-    /* 电流每项独立成行 */
-    .opt-col { display: flex; flex-direction: column; gap: 6px; }
-    .opt-line { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-    .opt-line .qty { font-size: 13px; color: var(--text-sub); display: inline-flex; align-items: center; gap: 4px; }
     .inline-input { border: none; border-bottom: 1.5px solid var(--border); outline: none; font-size: 13px; color: var(--text); padding: 3px 2px; width: 70px; background: transparent; font-family: inherit; }
     .inline-input:focus { border-bottom-color: var(--accent); }
     .opt .inline-input { margin-left: 2px; }
+
+    /* 数量 / 日期 行：三者盒高、内边距、字体统一，保证下划线落在同一水平线 */
+    .qd-row { gap: 8px 6px; align-items: center; }
+    .qd-row > .k { min-width: 0; }
+    .qd-row .inline-input,
+    .qd-row .date-fake {
+      box-sizing: border-box; display: inline-block;
+      height: 26px; line-height: 24px; padding: 0 2px 2px;
+      font-size: 13px; font-family: inherit; color: var(--text);
+      border: none; border-bottom: 1.5px solid var(--border);
+      background: transparent; vertical-align: middle; margin: 0;
+    }
+    .qd-row input[type="date"].inline-input {
+      -webkit-appearance: none; appearance: none; min-height: 0;
+    }
+    .qd-row .inline-input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+    .qd-row .date-fake { min-width: 148px; cursor: pointer; }
+    .qd-row .date-fake.empty { color: #9aa6b6; }
+    .qd-row .inline-input:focus,
+    .qd-row .date-fake:active { border-bottom-color: var(--accent); }
+    /* 数量 / 日期 必填校验 */
+    .qd-row .inline-input.err,
+    .qd-row .date-fake.err { border-bottom-color: var(--danger); }
+    .qd-row .inline-input.err:focus,
+    .qd-row .date-fake.err:active { border-bottom-color: var(--danger); }
+    .qd-err { font-size: 11px; color: var(--danger); margin-top: 5px; line-height: 1.3; }
 
     /* 弹窗 */
     .mask { position: fixed; inset: 0; background: rgba(15,23,42,.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
@@ -232,6 +357,7 @@
       .wrap { margin: 0; padding: 0; max-width: none; }
       .panel, .op-hero { box-shadow: none; border: 1px solid #d5dbe4; border-radius: 0; margin-bottom: 10px; }
       .bar, .btn-add, .mask, .card-ops { display: none; }
+      .dp-mask { display: none !important; }
       .op-hero { background: #1e3a8a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .op-hero .opt.on { background: #fff !important; color: #1e3a8a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       @page { margin: 12mm; }
@@ -262,12 +388,38 @@
       <div class="sub">CHARGING PILE SELECTION</div>
     </div>
 
-    <!-- 全局运营方式：页面核心区 -->
-    <div class="op-hero">
+    <!-- 全局运营方式：默认卡片式，点编辑展开 -->
+    <div class="panel" v-if="!opEditing">
+      <div class="panel-head">
+        <span class="bar-mark"></span>
+        <span class="t">运营方式</span>
+        <span class="desc">全局设置</span>
+      </div>
+      <div class="panel-body">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-tag">全局设置</span>
+            <span class="card-ops">
+              <button @click="opEditing = true">编辑</button>
+            </span>
+          </div>
+          <div class="row"><span class="k">运行方式</span><span>{{ opText.run }}</span></div>
+          <div class="row" v-if="globalOp.run==='standalone'"><span class="k">单机方式</span><span>{{ opText.single }}</span></div>
+          <template v-else-if="globalOp.run==='network'">
+            <div class="row"><span class="k">联网方式</span><span>{{ opText.net }}</span></div>
+            <div class="row"><span class="k">平台选择</span><span>{{ opText.platform }}</span></div>
+          </template>
+          <div class="row" v-if="globalOp.note"><span class="k">其他指定要求</span><span>{{ globalOp.note }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="op-hero" v-else>
       <div class="hero-head">
         <span class="t">运营方式</span>
         <span class="badge">全局设置</span>
         <span class="desc">以下配置将套用到所有未单独设置的条目</span>
+        <button class="hero-done" @click="opEditing = false">完成</button>
       </div>
       <div class="hero-grid">
         <div class="op-cell">
@@ -275,23 +427,27 @@
           <span class="opt" :class="{on: globalOp.run==='standalone'}" @click="globalOp.run='standalone'"><span class="chk"></span>单机使用</span>
           <span class="opt" :class="{on: globalOp.run==='network'}" @click="globalOp.run='network'"><span class="chk"></span>联网使用</span>
         </div>
-        <div class="op-cell">
+        <div class="op-cell" v-if="globalOp.run==='standalone'">
           <div class="ct"><span class="dot"></span>单机方式</div>
           <span class="opt" :class="{on: globalOp.single==='card'}" @click="globalOp.single='card'"><span class="chk"></span>刷卡启动（送二张卡）</span>
+          <span class="opt" :class="{on: globalOp.single==='plug'}" @click="globalOp.single='plug'"><span class="chk"></span>即插即充</span>
           <span class="opt" :class="{on: globalOp.single==='other'}" @click="globalOp.single='other'"><span class="chk"></span>其他</span>
         </div>
-        <div class="op-cell">
-          <div class="ct"><span class="dot"></span>联网方式</div>
-          <span class="opt" :class="{on: globalOp.net==='iot'}" @click="globalOp.net='iot'"><span class="chk"></span>物联网卡（免费送二年）</span>
-          <span class="opt" :class="{on: globalOp.net==='ethernet'}" @click="globalOp.net='ethernet'"><span class="chk"></span>以太网</span>
-          <span class="opt" :class="{on: globalOp.net==='other'}" @click="globalOp.net='other'"><span class="chk"></span>其他</span>
-        </div>
-        <div class="op-cell">
-          <div class="ct"><span class="dot"></span>平台选择</div>
-          <span class="opt" :class="{on: globalOp.platform==='yunkuai'}" @click="globalOp.platform='yunkuai'"><span class="chk"></span>默认（云快充）</span>
-          <span class="opt" :class="{on: globalOp.platform==='other'}" @click="globalOp.platform='other'"><span class="chk"></span>其他</span>
-          <input type="text" class="other-input" v-model="globalOp.platformOtherText" placeholder="____">
-        </div>
+        <template v-else-if="globalOp.run==='network'">
+            <div class="op-cell">
+            <div class="ct"><span class="dot"></span>联网方式</div>
+            <span class="opt" :class="{on: globalOp.net==='iot'}" @click="globalOp.net='iot'"><span class="chk"></span>物联网卡（免费送二年）</span>
+            <span class="opt" :class="{on: globalOp.net==='ethernet'}" @click="globalOp.net='ethernet'"><span class="chk"></span>以太网</span>
+            <span class="opt" :class="{on: globalOp.net==='other'}" @click="globalOp.net='other'"><span class="chk"></span>其他</span>
+            <input type="text" class="other-input" v-if="globalOp.net==='other'" v-model="globalOp.networkingOtherText">
+            </div>
+            <div class="op-cell">
+            <div class="ct"><span class="dot"></span>平台选择</div>
+            <span class="opt" :class="{on: globalOp.platform==='yunkuai'}" @click="globalOp.platform='yunkuai'"><span class="chk"></span>默认（云快充）</span>
+            <span class="opt" :class="{on: globalOp.platform==='other'}" @click="globalOp.platform='other'"><span class="chk"></span>其他</span>
+            <input type="text" class="other-input" v-if="globalOp.platform==='other'" v-model="globalOp.platformOtherText">
+            </div>
+        </template>
         <div class="op-cell full">
           <div class="ct"><span class="dot"></span>其他指定要求</div>
           <textarea class="op-note" v-model="globalOp.note" placeholder="填写其他指定要求…"></textarea>
@@ -308,64 +464,116 @@
       </div>
       <div class="panel-body">
         <div class="info-grid">
-          <div class="info-item"><span class="il">订货日期</span><input type="text" v-model="form.orderDate"></div>
-          <div class="info-item"><span class="il">订货台数</span><input type="text" v-model="form.orderQty"></div>
-          <div class="info-item"><span class="il">项目名称</span><input type="text" v-model="form.project"></div>
-          <div class="info-item"><span class="il">项目地址</span><input type="text" v-model="form.address"></div>
-          <div class="info-item"><span class="il">客户名称</span><input type="text" v-model="form.customer"></div>
-          <div class="info-item"><span class="il">联系方式</span><input type="text" v-model="form.contact"></div>
-          <div class="info-item"><span class="il">交货日期</span><input type="text" v-model="form.deliveryDate"></div>
-          <div class="info-item"><span class="il">用户单位</span><input type="text" v-model="form.userUnit"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 产品板块：有卡片才显示 -->
-    <div class="panel section-panel" v-if="form.acWall.length">
-      <div class="panel-head">
-        <span class="bar-mark"></span>
-        <span class="t">交流壁挂式</span>
-      </div>
-      <div class="panel-body">
-        <div class="cards">
-          <div v-for="(c,i) in form.acWall" :key="c.id" class="card">
-            <div class="card-head">
-              <span class="card-tag">壁挂式 #{{ i+1 }}</span>
-              <span class="card-ops">
-                <button @click="editCard('acWall', i)">编辑</button>
-                <button class="del" @click="form.acWall.splice(i,1)">删除</button>
-              </span>
-            </div>
-            <div class="row"><span class="k">功率</span><span>{{ powerLabel(c,'acWall') || '—' }}</span></div>
-            <div class="row"><span class="k">功能</span><span>{{ funcLabel(c) || '—' }}</span></div>
-            <div class="row"><span class="k">安装</span><span>{{ mountLabel(c,'acWall') || '—' }}</span></div>
-            <div class="row" v-if="c.qty || c.delivery"><span class="k">订货</span><span>{{ c.qty ? c.qty+' 台' : '' }}{{ c.qty && c.delivery ? ' · ' : '' }}{{ c.delivery ? '交货 '+c.delivery : '' }}</span></div>
-            <div class="row" v-if="c.note"><span class="k">备注</span><span>{{ c.note }}</span></div>
-            <div class="row"><span class="k">运营</span><span>{{ opLabel(c.op) }}</span></div>
+          <div class="info-item">
+            <span class="il">订货日期<i class="req">*</i></span>
+            <input v-if="!isMobile" type="date" v-model="form.orderDate" :class="{err: errors.orderDate}" @keydown.prevent @paste.prevent @change="checkField('orderDate')">
+            <div v-else class="date-fake" :class="{err: errors.orderDate, empty: !form.orderDate}" @click="openPicker('orderDate')">{{ form.orderDate || '' }}</div>
+            <span class="emsg" v-if="errors.orderDate">{{ errors.orderDate }}</span>
+          </div>
+          <div class="info-item">
+            <span class="il">订货台数<i class="req">*</i></span>
+            <input type="number" min="1" step="1" inputmode="numeric" v-model="form.orderQty" :class="{err: errors.orderQty}" @blur="checkField('orderQty')" @input="errors.orderQty=''">
+            <span class="emsg" v-if="errors.orderQty">{{ errors.orderQty }}</span>
+          </div>
+          <div class="info-item">
+            <span class="il">项目名称<i class="req">*</i></span>
+            <input type="text" v-model="form.project" :class="{err: errors.project}" @blur="checkField('project')" @input="errors.project=''">
+            <span class="emsg" v-if="errors.project">{{ errors.project }}</span>
+          </div>
+          <div class="info-item">
+            <span class="il">项目地址<i class="req">*</i></span>
+            <input type="text" v-model="form.address" :class="{err: errors.address}" @blur="checkField('address')" @input="errors.address=''">
+            <span class="emsg" v-if="errors.address">{{ errors.address }}</span>
+          </div>
+          <div class="info-item">
+            <span class="il">客户单位<i class="req">*</i></span>
+            <input type="text" v-model="form.customer" :class="{err: errors.customer}" @blur="checkField('customer')" @input="errors.customer=''">
+            <span class="emsg" v-if="errors.customer">{{ errors.customer }}</span>
+          </div>
+          <div class="info-item">
+            <span class="il">客户号码</span>
+            <input type="tel" maxlength="11" inputmode="numeric" v-model="form.customerPhone" :class="{err: errors.customerPhone}" @blur="checkField('customerPhone')" @input="errors.customerPhone=''">
+            <span class="emsg" v-if="errors.customerPhone">{{ errors.customerPhone }}</span>
+          </div>
+          <div class="info-item">
+            <span class="il">业主单位<i class="req">*</i></span>
+            <input type="text" v-model="form.ownerUnit" :class="{err: errors.ownerUnit}" @blur="checkField('ownerUnit')" @input="errors.ownerUnit=''">
+            <span class="emsg" v-if="errors.ownerUnit">{{ errors.ownerUnit }}</span>
+          </div>
+          <div class="info-item">
+            <span class="il">业主号码</span>
+            <input type="tel" maxlength="11" inputmode="numeric" v-model="form.ownerPhone" :class="{err: errors.ownerPhone}" @blur="checkField('ownerPhone')" @input="errors.ownerPhone=''">
+            <span class="emsg" v-if="errors.ownerPhone">{{ errors.ownerPhone }}</span>
+          </div>
+          <div class="info-item">
+            <span class="il">交货日期<i class="req">*</i></span>
+            <input v-if="!isMobile" type="date" v-model="form.deliveryDate" :class="{err: errors.deliveryDate}" @keydown.prevent @paste.prevent @change="checkField('deliveryDate')">
+            <div v-else class="date-fake" :class="{err: errors.deliveryDate, empty: !form.deliveryDate}" @click="openPicker('deliveryDate')">{{ form.deliveryDate || '' }}</div>
+            <span class="emsg" v-if="errors.deliveryDate">{{ errors.deliveryDate }}</span>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="panel section-panel" v-if="form.acInt.length">
+    <!-- 产品板块：有卡片才显示 -->
+    <div class="panel section-panel" v-if="form.gbAc.length">
       <div class="panel-head">
         <span class="bar-mark"></span>
-        <span class="t">交流一体式</span>
+        <span class="t">国标交流</span>
       </div>
       <div class="panel-body">
         <div class="cards">
-          <div v-for="(c,i) in form.acInt" :key="c.id" class="card">
+          <div v-for="(c,i) in form.gbAc" :key="c.id" class="card">
             <div class="card-head">
-              <span class="card-tag">一体式 #{{ i+1 }}</span>
+              <span class="card-tag">国标交流 #{{ i+1 }}</span>
               <span class="card-ops">
-                <button @click="editCard('acInt', i)">编辑</button>
-                <button class="del" @click="form.acInt.splice(i,1)">删除</button>
+                <button @click="editCard('gbAc', i)">编辑</button>
+                <button class="del" @click="form.gbAc.splice(i,1)">删除</button>
               </span>
             </div>
-            <div class="row"><span class="k">功率</span><span>{{ powerLabel(c,'acInt') || '—' }}</span></div>
-            <div class="row"><span class="k">安装</span><span>{{ mountLabel(c,'acInt') || '—' }}</span></div>
+            <div class="row"><span class="k">品牌</span><span>{{ brandLabel(c) || '—' }}</span></div>
+            <div class="row"><span class="k">类型</span><span>{{ gbKindLabel(c) || '—' }}</span></div>
+            <template v-if="c.kind==='wall'">
+              <div class="row"><span class="k">标准</span><span>{{ stdLabel(c) || '—' }}</span></div>
+              <div class="row"><span class="k">屏幕</span><span>{{ screenLabel(c) || '—' }}</span></div>
+              <div class="row"><span class="k">安装</span><span>{{ mountAcLabel(c) || '—' }}</span></div>
+            </template>
+            <template v-else-if="c.kind==='integrated'">
+              <div class="row"><span class="k">功率</span><span>{{ c.power ? c.power+'kW' : '—' }}</span></div>
+              <div class="row"><span class="k">标准</span><span>{{ stdLabel(c) || '—' }}</span></div>
+              <div class="row"><span class="k">屏幕</span><span>{{ screenLabel(c) || '—' }}</span></div>
+            </template>
             <div class="row" v-if="c.note"><span class="k">备注</span><span>{{ c.note }}</span></div>
+            <div class="row" v-if="c.qty || c.delivery"><span class="k">数量</span><span>{{ c.qty ? c.qty+' 台' : '' }}{{ c.qty && c.delivery ? ' · ' : '' }}{{ c.delivery ? '日期 '+c.delivery : '' }}</span></div>
             <div class="row"><span class="k">运营</span><span>{{ opLabel(c.op) }}</span></div>
+            <div class="row" v-if="c.op && !c.op.useGlobal && c.op.note"><span class="k">运营要求</span><span>{{ c.op.note }}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel section-panel" v-if="form.euAc.length">
+      <div class="panel-head">
+        <span class="bar-mark"></span>
+        <span class="t">欧标交流</span>
+      </div>
+      <div class="panel-body">
+        <div class="cards">
+          <div v-for="(c,i) in form.euAc" :key="c.id" class="card">
+            <div class="card-head">
+              <span class="card-tag">欧标交流 #{{ i+1 }}</span>
+              <span class="card-ops">
+                <button @click="editCard('euAc', i)">编辑</button>
+                <button class="del" @click="form.euAc.splice(i,1)">删除</button>
+              </span>
+            </div>
+            <div class="row"><span class="k">品牌</span><span>{{ brandLabel(c) || '—' }}</span></div>
+            <div class="row"><span class="k">功率</span><span>{{ euPowerLabel(c) || '—' }}</span></div>
+            <div class="row"><span class="k">功能</span><span>{{ euFuncLabel(c) || '—' }}</span></div>
+            <div class="row" v-if="c.note"><span class="k">备注</span><span>{{ c.note }}</span></div>
+            <div class="row" v-if="c.qty || c.delivery"><span class="k">数量</span><span>{{ c.qty ? c.qty+' 台' : '' }}{{ c.qty && c.delivery ? ' · ' : '' }}{{ c.delivery ? '日期 '+c.delivery : '' }}</span></div>
+            <div class="row"><span class="k">运营</span><span>{{ opLabel(c.op) }}</span></div>
+            <div class="row" v-if="c.op && !c.op.useGlobal && c.op.note"><span class="k">运营要求</span><span>{{ c.op.note }}</span></div>
           </div>
         </div>
       </div>
@@ -374,24 +582,30 @@
     <div class="panel section-panel" v-if="form.dc.length">
       <div class="panel-head">
         <span class="bar-mark"></span>
-        <span class="t">直流一体桩</span>
+        <span class="t">直流一体</span>
       </div>
       <div class="panel-body">
         <div class="cards">
           <div v-for="(c,i) in form.dc" :key="c.id" class="card">
             <div class="card-head">
-              <span class="card-tag">直流一体桩 #{{ i+1 }}</span>
+              <span class="card-tag">直流一体 #{{ i+1 }}</span>
               <span class="card-ops">
                 <button @click="editCard('dc', i)">编辑</button>
                 <button class="del" @click="form.dc.splice(i,1)">删除</button>
               </span>
             </div>
+            <div class="row"><span class="k">品牌</span><span>{{ brandLabel(c) || '—' }}</span></div>
             <div class="row"><span class="k">功率</span><span>{{ powerLabel(c,'dc') || '—' }}</span></div>
             <div class="row"><span class="k">枪数</span><span>{{ gunLabel(c) || '—' }}</span></div>
-            <div class="row"><span class="k">安装</span><span>{{ mountLabel(c,'dc') || '—' }}</span></div>
-            <div class="row"><span class="k">其他</span><span>{{ otherReqLabel(c) || '—' }}</span></div>
+            <div class="row"><span class="k">屏幕</span><span>{{ dcScreenLabel(c) || '—' }}</span></div>
+            <div class="row"><span class="k">亮度</span><span>{{ dcBrightLabel(c) || '—' }}</span></div>
+            <div class="row"><span class="k">挡板</span><span>{{ dcBaffleLabel(c) || '—' }}</span></div>
+            <div class="row"><span class="k">3C</span><span>{{ c3Label(c) || '—' }}</span></div>
+            <div class="row" v-if="c3Detail(c)"><span class="k">3C 明细</span><span>{{ c3Detail(c) }}</span></div>
             <div class="row" v-if="c.note"><span class="k">备注</span><span>{{ c.note }}</span></div>
+            <div class="row" v-if="c.qty || c.delivery"><span class="k">数量</span><span>{{ c.qty ? c.qty+' 台' : '' }}{{ c.qty && c.delivery ? ' · ' : '' }}{{ c.delivery ? '日期 '+c.delivery : '' }}</span></div>
             <div class="row"><span class="k">运营</span><span>{{ opLabel(c.op) }}</span></div>
+            <div class="row" v-if="c.op && !c.op.useGlobal && c.op.note"><span class="k">运营要求</span><span>{{ c.op.note }}</span></div>
           </div>
         </div>
       </div>
@@ -412,12 +626,15 @@
                 <button class="del" @click="form.group.splice(i,1)">删除</button>
               </span>
             </div>
+            <div class="row"><span class="k">品牌</span><span>{{ brandLabel(c) || '—' }}</span></div>
             <div class="row"><span class="k">功率</span><span>{{ powerLabel(c,'group') || '—' }}</span></div>
-            <div class="row"><span class="k">终端</span><span>{{ termLabel(c) || '—' }}</span></div>
-            <div class="row"><span class="k">电流</span><span>{{ curLabel(c) || '—' }}</span></div>
-            <div class="row" v-if="c.stackQty || c.delivery"><span class="k">整堆</span><span>{{ c.stackQty ? c.stackQty+' 堆' : '' }}{{ c.stackQty && c.delivery ? ' · ' : '' }}{{ c.delivery ? '交货 '+c.delivery : '' }}</span></div>
-            <div class="row" v-if="c.note"><span class="k">其他</span><span>{{ c.note }}</span></div>
+            <div class="row"><span class="k">枪数</span><span>{{ gunTotalLabel(c) || '—' }}</span></div>
+            <div class="row"><span class="k">终端配置</span><span>{{ groupTermText(c) || '—' }}</span></div>
+            <div class="row" v-if="groupTermText(c)"><span class="k">终端合计</span><span>{{ termQtyOf(c.terminals) }} 台 / {{ termGunOf(c.terminals) }} 枪</span></div>
+            <div class="row" v-if="c.note"><span class="k">备注</span><span>{{ c.note }}</span></div>
+            <div class="row" v-if="c.stackQty || c.delivery"><span class="k">数量</span><span>{{ c.stackQty ? c.stackQty+' 堆' : '' }}{{ c.stackQty && c.delivery ? ' · ' : '' }}{{ c.delivery ? '日期 '+c.delivery : '' }}</span></div>
             <div class="row"><span class="k">运营</span><span>{{ opLabel(c.op) }}</span></div>
+            <div class="row" v-if="c.op && !c.op.useGlobal && c.op.note"><span class="k">运营要求</span><span>{{ c.op.note }}</span></div>
           </div>
         </div>
       </div>
@@ -457,21 +674,21 @@
         <div class="modal-body">
 
           <div v-if="!modal.type" class="type-grid">
-            <div class="type-item" @click="pickType('acWall')">
-              <div class="ti-name">交流壁挂式</div>
-              <div class="ti-desc">7kW圆梦款等，壁挂/带立柱安装</div>
+            <div class="type-item" @click="pickType('gbAc')">
+              <div class="ti-name">国标交流</div>
+              <div class="ti-desc">壁挂 / 一体，新国标·旧国标</div>
             </div>
-            <div class="type-item" @click="pickType('acInt')">
-              <div class="ti-name">交流一体式</div>
-              <div class="ti-desc">7kW / 14kW(双枪) 一体式</div>
+            <div class="type-item" @click="pickType('euAc')">
+              <div class="ti-name">欧标交流</div>
+              <div class="ti-desc">7 / 14 / 32kW，带BLD·电表</div>
             </div>
             <div class="type-item" @click="pickType('dc')">
-              <div class="ti-name">直流一体桩</div>
+              <div class="ti-name">直流一体</div>
               <div class="ti-desc">30kW~480kW，单枪/双枪</div>
             </div>
             <div class="type-item" @click="pickType('group')">
               <div class="ti-name">群充产品</div>
-              <div class="ti-desc">360kW~960kW，风冷/液冷终端</div>
+              <div class="ti-desc">240kW~960kW，终端自由混配</div>
             </div>
           </div>
 
@@ -480,123 +697,230 @@
               <button class="btn-ghost" style="padding:5px 14px; font-size:13px;" v-if="modal.index < 0" @click="backToType">← 重选类型</button>
             </div>
 
-            <template v-if="modal.type==='acWall'">
+            <template v-if="modal.type==='gbAc'">
               <div class="fld">
-                <div class="ft">功率</div>
-                <span class="opt" :class="{on: d.power==='7'}" @click="d.power='7'"><span class="chk"></span>7kW圆梦款</span>
-                <span class="opt" :class="{on: d.power==='other'}" @click="d.power='other'"><span class="chk"></span>其他</span>
-                <input type="text" class="other-input" v-model="d.powerOtherText" placeholder="____">
+                <div class="ft">品牌</div>
+                <span class="opt" :class="{on: d.brand==='xinch'}" @click="d.brand='xinch'"><span class="chk"></span>新驰</span>
+                <span class="opt" :class="{on: d.brand==='jiasheng'}" @click="d.brand='jiasheng'"><span class="chk"></span>迦晟</span>
+                <span class="opt" :class="{on: d.brand==='other'}" @click="d.brand='other'"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-if="d.brand==='other'" v-model="d.brandOtherText">
               </div>
               <div class="fld">
-                <div class="ft">功能</div>
-                <span class="opt" :class="{on: d.screen==='no'}" @click="d.screen='no'"><span class="chk"></span>不带屏幕</span>
-                <span class="opt" :class="{on: d.screen==='yes'}" @click="d.screen='yes'"><span class="chk"></span>带屏幕</span>
-                <span class="opt" :class="{on: d.g4==='no'}" @click="d.g4='no'"><span class="chk"></span>不带4G运营</span>
-                <span class="opt" :class="{on: d.g4==='yes'}" @click="d.g4='yes'"><span class="chk"></span>带4G运营</span>
+                <div class="ft">类型</div>
+                <span class="opt" :class="{on: d.kind==='wall'}" @click="d.kind='wall'"><span class="chk"></span>壁挂</span>
+                <span class="opt" :class="{on: d.kind==='integrated'}" @click="d.kind='integrated'"><span class="chk"></span>一体</span>
               </div>
-              <div class="fld">
-                <div class="ft">安装方式</div>
-                <span class="opt" :class="{on: d.mount==='wall'}" @click="d.mount='wall'"><span class="chk"></span>壁挂式</span>
-                <span class="opt" :class="{on: d.mount==='post'}" @click="d.mount='post'"><span class="chk"></span>带立柱</span>
-              </div>
-              <div class="fld">
-                <div class="ft">订货台数 / 交货日期</div>
-                <span class="opt" style="cursor:default; border:none; background:transparent; padding-left:0;">台数 <input type="text" class="inline-input" v-model="d.qty"></span>
-                <span class="opt" style="cursor:default; border:none; background:transparent; padding-left:0;">交货 <input type="text" class="inline-input" style="width:110px;" v-model="d.delivery"></span>
-              </div>
+
+              <template v-if="d.kind==='wall'">
+                <div class="fld">
+                  <div class="ft">标准</div>
+                  <span class="opt" :class="{on: d.std==='new'}" @click="d.std='new'"><span class="chk"></span>新国标</span>
+                  <span class="opt" :class="{on: d.std==='old'}" @click="d.std='old'"><span class="chk"></span>旧国标</span>
+                </div>
+                <div class="fld">
+                  <div class="ft">屏幕</div>
+                  <span class="opt" :class="{on: d.screen==='none'}" @click="d.screen='none'"><span class="chk"></span>不带屏幕</span>
+                  <span class="opt" :class="{on: d.screen==='nonTouch'}" @click="d.screen='nonTouch'"><span class="chk"></span>非触摸屏</span>
+                  <span class="opt" :class="{on: d.screen==='touch'}" @click="d.screen='touch'"><span class="chk"></span>触摸屏</span>
+                </div>
+                <div class="fld">
+                  <div class="ft">安装</div>
+                  <span class="opt" :class="{on: d.mount==='wall'}" @click="d.mount='wall'"><span class="chk"></span>壁挂</span>
+                  <span class="opt" :class="{on: d.mount==='post'}" @click="d.mount='post'"><span class="chk"></span>立柱</span>
+                </div>
+              </template>
+
+              <template v-else-if="d.kind==='integrated'">
+                <div class="fld">
+                  <div class="ft">功率</div>
+                  <span class="opt" :class="{on: d.power==='7'}" @click="d.power='7'"><span class="chk"></span>7kW</span>
+                  <span class="opt" :class="{on: d.power==='14'}" @click="d.power='14'"><span class="chk"></span>14kW</span>
+                </div>
+                <div class="fld">
+                  <div class="ft">标准</div>
+                  <span class="opt" :class="{on: d.std==='new'}" @click="d.std='new'"><span class="chk"></span>新国标</span>
+                  <span class="opt" :class="{on: d.std==='old'}" @click="d.std='old'"><span class="chk"></span>旧国标</span>
+                </div>
+                <div class="fld">
+                  <div class="ft">屏幕</div>
+                  <span class="opt" :class="{on: d.screen==='none'}" @click="d.screen='none'"><span class="chk"></span>不带屏幕</span>
+                  <span class="opt" :class="{on: d.screen==='nonTouch'}" @click="d.screen='nonTouch'"><span class="chk"></span>非触摸屏</span>
+                  <span class="opt" :class="{on: d.screen==='touch'}" @click="d.screen='touch'"><span class="chk"></span>触摸屏</span>
+                </div>
+              </template>
+
               <div class="fld"><div class="ft">备注</div><textarea v-model="d.note"></textarea></div>
+              <div class="fld">
+                <div class="ft">数量 / 日期</div>
+                <div class="grow qd-row">
+                  <span class="k">数量</span>
+                  <input type="text" inputmode="numeric" class="inline-input" style="width:80px;" :class="{err: dErr.qty}" v-model="d.qty" @input="numOnly(d,'qty'); checkCardField('qty')">
+                  <span class="k">日期</span>
+                  <input v-if="!isMobile" type="date" class="inline-input" :class="{err: dErr.delivery}" v-model="d.delivery" @keydown.prevent @paste.prevent @change="checkCardField('delivery')">
+                  <div v-else class="date-fake" :class="{err: dErr.delivery, empty: !d.delivery}" @click="openPicker('delivery','card')">{{ d.delivery || '' }}</div>
+                </div>
+                <div class="qd-err" v-if="dErr.qty || dErr.delivery">{{ dErr.qty || dErr.delivery }}</div>
+              </div>
             </template>
 
-            <template v-else-if="modal.type==='acInt'">
+            <template v-else-if="modal.type==='euAc'">
+              <div class="fld">
+                <div class="ft">品牌</div>
+                <span class="opt" :class="{on: d.brand==='xinch'}" @click="d.brand='xinch'"><span class="chk"></span>新驰</span>
+                <span class="opt" :class="{on: d.brand==='other'}" @click="d.brand='other'"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-if="d.brand==='other'" v-model="d.brandOtherText">
+              </div>
               <div class="fld">
                 <div class="ft">功率</div>
                 <span class="opt" :class="{on: d.power==='7'}" @click="d.power='7'"><span class="chk"></span>7kW</span>
-                <span class="opt" :class="{on: d.power==='14'}" @click="d.power='14'"><span class="chk"></span>14kW(双枪)</span>
-                <span class="opt" :class="{on: d.power==='other'}" @click="d.power='other'"><span class="chk"></span>其他</span>
-                <input type="text" class="other-input" v-model="d.powerOtherText" placeholder="____">
+                <span class="opt" :class="{on: d.power==='14'}" @click="d.power='14'"><span class="chk"></span>14kW</span>
+                <span class="opt" :class="{on: d.power==='32'}" @click="d.power='32'"><span class="chk"></span>32kW</span>
               </div>
-              <div class="fld"><div class="ft">安装方式</div>
-                <span class="opt" :class="{on: d.mount==='integrated'}" @click="d.mount='integrated'"><span class="chk"></span>一体式</span>
+              <div class="fld">
+                <div class="ft">功能 <span class="tip">可多选</span></div>
+                <span class="opt" :class="{on: d.funcs && d.funcs.indexOf('bld')>-1}" @click="toggleEuFunc('bld')"><span class="chk"></span>带BLD</span>
+                <span class="opt" :class="{on: d.funcs && d.funcs.indexOf('meter')>-1}" @click="toggleEuFunc('meter')"><span class="chk"></span>电表</span>
               </div>
               <div class="fld"><div class="ft">备注</div><textarea v-model="d.note"></textarea></div>
+              <div class="fld">
+                <div class="ft">数量 / 日期</div>
+                <div class="grow qd-row">
+                  <span class="k">数量</span>
+                  <input type="text" inputmode="numeric" class="inline-input" style="width:80px;" :class="{err: dErr.qty}" v-model="d.qty" @input="numOnly(d,'qty'); checkCardField('qty')">
+                  <span class="k">日期</span>
+                  <input v-if="!isMobile" type="date" class="inline-input" :class="{err: dErr.delivery}" v-model="d.delivery" @keydown.prevent @paste.prevent @change="checkCardField('delivery')">
+                  <div v-else class="date-fake" :class="{err: dErr.delivery, empty: !d.delivery}" @click="openPicker('delivery','card')">{{ d.delivery || '' }}</div>
+                </div>
+                <div class="qd-err" v-if="dErr.qty || dErr.delivery">{{ dErr.qty || dErr.delivery }}</div>
+              </div>
             </template>
 
             <template v-else-if="modal.type==='dc'">
               <div class="fld">
+                <div class="ft">品牌</div>
+                <span class="opt" :class="{on: d.brand==='xinch'}" @click="d.brand='xinch'"><span class="chk"></span>新驰</span>
+                <span class="opt" :class="{on: d.brand==='jiasheng'}" @click="d.brand='jiasheng'"><span class="chk"></span>迦晟</span>
+                <span class="opt" :class="{on: d.brand==='zhengtai'}" @click="d.brand='zhengtai'"><span class="chk"></span>正泰</span>
+                <span class="opt" :class="{on: d.brand==='jiyeda'}" @click="d.brand='jiyeda'"><span class="chk"></span>基业达</span>
+                <span class="opt" :class="{on: d.brand==='other'}" @click="d.brand='other'"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-if="d.brand==='other'" v-model="d.brandOtherText">
+              </div>
+              <div class="fld">
                 <div class="ft">功率</div>
-                <span v-for="p in ['30','40','60','80','120','160','180','240','320','400','480']" :key="p" class="opt" :class="{on: d.power===p}" @click="setDcPower(p)"><span class="chk"></span>{{p}}kW</span>
-                <span class="opt" :class="{on: d.power==='other'}" @click="setDcPower('other')"><span class="chk"></span>其他</span>
-                <input type="text" class="other-input" v-model="d.powerOtherText" placeholder="____">
+                <span v-for="p in dcPowers" :key="p" class="opt" :class="{on: d.power===p}" @click="setDcPower(p)"><span class="chk"></span>{{p}}kW</span>
               </div>
               <div class="fld">
-                <div class="ft">枪数量 <span class="tip" v-if="dcSingleGunOnly">30kW/40kW 仅支持单枪</span></div>
-                <span class="opt" :class="{on: d.gun==='single'}" @click="setDcGun('single')"><span class="chk"></span>单枪</span>
-                <span class="opt" :class="{on: d.gun==='double', disabled: dcSingleGunOnly}" @click="setDcGun('double')"><span class="chk"></span>双枪</span>
-                <span class="opt" :class="{on: d.gun==='other', disabled: dcSingleGunOnly}" @click="setDcGun('other')"><span class="chk"></span>其他</span>
-                <input type="text" class="other-input" v-model="d.gunOtherText" :disabled="dcSingleGunOnly" placeholder="____">
+                <div class="ft">枪数 <span class="tip">{{ dcGunHint }}</span></div>
+                <span class="opt" :class="{on: d.gun==='single', disabled: !dcCanSingle}" @click="setDcGun('single')"><span class="chk"></span>单枪</span>
+                <span class="opt" :class="{on: d.gun==='double', disabled: !dcCanDouble}" @click="setDcGun('double')"><span class="chk"></span>双枪</span>
               </div>
               <div class="fld">
-                <div class="ft">安装方式 <span class="tip" v-if="!dcCanWall">仅 30kW/40kW 可选壁挂式</span></div>
-                <span class="opt" :class="{on: d.mount==='wall', disabled: !dcCanWall}" @click="setDcMount('wall')"><span class="chk"></span>壁挂式（40KW以下）</span>
-                <span class="opt" :class="{on: d.mount==='post'}" @click="setDcMount('post')"><span class="chk"></span>立柱式</span>
-                <span class="opt" :class="{on: d.mount==='other'}" @click="setDcMount('other')"><span class="chk"></span>其他</span>
-                <input type="text" class="other-input" v-model="d.mountOtherText" placeholder="____">
+                <div class="ft">屏幕</div>
+                <span class="opt" :class="{on: d.screen==='external'}" @click="d.screen='external'"><span class="chk"></span>外置</span>
+                <span class="opt" :class="{on: d.screen==='internal'}" @click="d.screen='internal'"><span class="chk"></span>内置</span>
               </div>
               <div class="fld">
-                <div class="ft">其他要求</div>
-                <span class="opt" :class="{on: d.otherReq==='default'}" @click="d.otherReq='default'"><span class="chk"></span>默认</span>
-                <span class="opt" :class="{on: d.otherReq==='other'}" @click="d.otherReq='other'"><span class="chk"></span>其他</span>
+                <div class="ft">亮度</div>
+                <span class="opt" :class="{on: d.bright==='standard'}" @click="d.bright='standard'"><span class="chk"></span>标准亮度</span>
+                <span class="opt" :class="{on: d.bright==='high'}" @click="d.bright='high'"><span class="chk"></span>高亮</span>
               </div>
-              <div class="fld"><div class="ft">备注 <span class="tip">直流一体机双枪功率只能选偶数，特殊要求提前备注</span></div><textarea v-model="d.note"></textarea></div>
+              <div class="fld">
+                <div class="ft">挡板</div>
+                <span class="opt" :class="{on: d.baffle==='acrylic'}" @click="d.baffle='acrylic'"><span class="chk"></span>亚克力板</span>
+                <span class="opt" :class="{on: d.baffle==='glass'}" @click="d.baffle='glass'"><span class="chk"></span>玻璃一体屏</span>
+              </div>
+              <div class="fld">
+                <div class="ft">3C</div>
+                <span class="opt" :class="{on: d.c3==='full'}" @click="d.c3='full'"><span class="chk"></span>完全符合</span>
+                <span class="opt" :class="{on: d.c3==='notRequired'}" @click="d.c3='notRequired'"><span class="chk"></span>不用符合</span>
+              </div>
+              <div class="op-cell light" v-if="d.c3==='notRequired'">
+                <div class="ct"><span class="dot"></span>不用符合的项目</div>
+                <div class="sub-row">
+                  <span class="k">壳体</span>
+                  <span class="opt" :class="{on: d.c3Shell==='full'}" @click="d.c3Shell='full'"><span class="chk"></span>完全符合</span>
+                  <span class="opt" :class="{on: d.c3Shell==='notRequired'}" @click="d.c3Shell='notRequired'"><span class="chk"></span>不用符合</span>
+                </div>
+                <div class="sub-row">
+                  <span class="k">枪线</span>
+                  <span class="opt" :class="{on: d.c3Cable==='full'}" @click="d.c3Cable='full'"><span class="chk"></span>完全符合</span>
+                  <span class="opt" :class="{on: d.c3Cable==='notRequired'}" @click="d.c3Cable='notRequired'"><span class="chk"></span>不用符合</span>
+                </div>
+                <div class="sub-row">
+                  <span class="k">模块</span>
+                  <span class="opt" :class="{on: d.c3Module==='full'}" @click="d.c3Module='full'"><span class="chk"></span>完全符合</span>
+                  <span class="opt" :class="{on: d.c3Module==='notRequired'}" @click="d.c3Module='notRequired'"><span class="chk"></span>不用符合</span>
+                </div>
+              </div>
+              <div class="fld"><div class="ft">备注 <span class="tip">双枪功率只能选偶数，特殊要求提前备注</span></div><textarea v-model="d.note"></textarea></div>
+              <div class="fld">
+                <div class="ft">数量 / 日期</div>
+                <div class="grow qd-row">
+                  <span class="k">数量</span>
+                  <input type="text" inputmode="numeric" class="inline-input" style="width:80px;" :class="{err: dErr.qty}" v-model="d.qty" @input="numOnly(d,'qty'); checkCardField('qty')">
+                  <span class="k">日期</span>
+                  <input v-if="!isMobile" type="date" class="inline-input" :class="{err: dErr.delivery}" v-model="d.delivery" @keydown.prevent @paste.prevent @change="checkCardField('delivery')">
+                  <div v-else class="date-fake" :class="{err: dErr.delivery, empty: !d.delivery}" @click="openPicker('delivery','card')">{{ d.delivery || '' }}</div>
+                </div>
+                <div class="qd-err" v-if="dErr.qty || dErr.delivery">{{ dErr.qty || dErr.delivery }}</div>
+              </div>
             </template>
 
             <template v-else-if="modal.type==='group'">
               <div class="fld">
+                <div class="ft">品牌</div>
+                <span class="opt" :class="{on: d.brand==='xinch'}" @click="d.brand='xinch'"><span class="chk"></span>新驰</span>
+                <span class="opt" :class="{on: d.brand==='jiasheng'}" @click="d.brand='jiasheng'"><span class="chk"></span>迦晟</span>
+                <span class="opt" :class="{on: d.brand==='zhengtai'}" @click="d.brand='zhengtai'"><span class="chk"></span>正泰</span>
+                <span class="opt" :class="{on: d.brand==='jiyeda'}" @click="d.brand='jiyeda'"><span class="chk"></span>基业达</span>
+                <span class="opt" :class="{on: d.brand==='other'}" @click="d.brand='other'"><span class="chk"></span>其他</span>
+                <input type="text" class="other-input" v-if="d.brand==='other'" v-model="d.brandOtherText">
+              </div>
+              <div class="fld">
                 <div class="ft">功率</div>
-                <span v-for="p in ['360','480','600','720','960']" :key="p" class="opt" :class="{on: d.power===p}" @click="d.power=p"><span class="chk"></span>{{p}}kW</span>
+                <span v-for="p in groupPowers" :key="p" class="opt" :class="{on: d.power===p}" @click="d.power=p"><span class="chk"></span>{{p}}kW</span>
                 <span class="opt" :class="{on: d.power==='other'}" @click="d.power='other'"><span class="chk"></span>其他</span>
-                <input type="text" class="other-input" v-model="d.powerOtherText" placeholder="____">
+                <input type="text" class="other-input" v-if="d.power==='other'" v-model="d.powerOtherText">
               </div>
               <div class="fld">
-                <div class="ft">终端类型</div>
-                <div class="opt-row">
-                  <span class="opt" :class="{on: d.term==='singleAir'}" @click="setGroupTerm('singleAir')"><span class="chk"></span>单枪风冷</span>
-                  <span class="opt" :class="{on: d.term==='doubleAir'}" @click="setGroupTerm('doubleAir')"><span class="chk"></span>双枪风冷</span>
-                  <span class="opt" :class="{on: d.term==='singleLiquid'}" @click="setGroupTerm('singleLiquid')"><span class="chk"></span>单枪液冷</span>
-                  <span class="opt" :class="{on: d.term==='other'}" @click="setGroupTerm('other')"><span class="chk"></span>其他</span>
-                  <input type="text" class="other-input" v-model="d.termOtherText" placeholder="____">
-                </div>
+                <div class="ft">枪数 <span class="tip" v-if="groupGunLimit !== null">上限 {{ groupGunLimit }} 枪，终端清单不得超出</span></div>
+                <span v-for="g in groupGunOptions" :key="g" class="opt" :class="{on: d.gunTotal===g}" @click="d.gunTotal=g"><span class="chk"></span>{{g}}枪</span>
+                <span class="opt" :class="{on: d.gunTotal==='other'}" @click="d.gunTotal='other'"><span class="chk"></span>其他</span>
+                <input type="text" inputmode="numeric" class="other-input" v-if="d.gunTotal==='other'" v-model="d.gunTotalOtherText" @input="numOnly(d,'gunTotalOtherText')">
               </div>
+
               <div class="fld">
-                <div class="ft">电流 <span class="tip">{{ curHint }}</span></div>
-                <div class="opt-col">
-                  <div class="opt-line">
-                    <span class="opt" :class="{on: d.airCur==='250', disabled: !curCanAir}" @click="setAirCur('250')"><span class="chk"></span>250A</span>
-                    <span class="qty" v-if="d.airCur==='250'">数量：<input type="text" class="inline-input" v-model="d.airQty250"></span>
-                  </div>
-                  <div class="opt-line">
-                    <span class="opt" :class="{on: d.airCur==='300', disabled: !curCanAir}" @click="setAirCur('300')"><span class="chk"></span>300A</span>
-                    <span class="qty" v-if="d.airCur==='300'">数量：<input type="text" class="inline-input" v-model="d.airQty300"></span>
-                  </div>
-                  <div class="opt-line">
-                    <span class="opt" :class="{on: d.liquid600On, disabled: !curCanLiquid}" @click="toggleCur('liquid600')"><span class="chk"></span>600A(液冷)</span>
-                    <span class="qty" v-if="d.liquid600On">数量：<input type="text" class="inline-input" v-model="d.liquidQty600"></span>
-                  </div>
-                  <div class="opt-line">
-                    <span class="opt" :class="{on: d.liquidOtherOn, disabled: !curCanOther}" @click="toggleCur('liquidOther')"><span class="chk"></span>其他</span>
-                    <span class="qty" v-if="d.liquidOtherOn"><input type="text" class="other-input" v-model="d.liquidCurOtherText" placeholder="____"> 数量：<input type="text" class="inline-input" v-model="d.liquidQtyOther"></span>
+                <div class="ft">终端配置 <span class="tip">同一主柜可混配，按实际数量填写，不填即为 0</span></div>
+                <div class="term-list" :class="{over: groupGunOver}">
+                  <div class="term-row" v-for="t in groupTermRows" :key="t.key">
+                    <span class="term-name">{{ t.label }}</span>
+                    <input type="text" inputmode="numeric" class="inline-input term-qty" v-model="d.terminals[t.key]" placeholder="0" @input="numOnly(d.terminals, t.key)">
+                    <span class="term-unit">台</span>
                   </div>
                 </div>
+                <div class="term-sum" :class="{over: groupGunOver}">
+                  终端合计 <b>{{ groupTermQty }}</b> 台
+                  <span class="dot-sep">·</span>
+                  枪数合计 <b>{{ groupGunSum }}</b> 把
+                  <span class="over-tip" v-if="groupGunOver">超出主柜枪数 {{ groupGunLimit }} 枪，请减少终端数量</span>
+                </div>
               </div>
+
+              <div class="fld"><div class="ft">备注</div><textarea v-model="d.note"></textarea></div>
               <div class="fld">
-                <div class="ft">整堆数量 / 交货日期</div>
-                <span class="opt" style="cursor:default; border:none; background:transparent; padding-left:0;">整堆数量：<input type="text" class="inline-input" style="width:90px;" v-model="d.stackQty"></span>
-                <span class="opt" style="cursor:default; border:none; background:transparent; padding-left:0;">交货日期：<input type="text" class="inline-input" style="width:110px;" v-model="d.delivery"></span>
+                <div class="ft">数量 / 日期 <span class="tip">数量指这套配置的整堆数量</span></div>
+                <div class="grow qd-row">
+                  <span class="k">数量</span>
+                  <input type="text" inputmode="numeric" class="inline-input" style="width:80px;" :class="{err: dErr.qty}" v-model="d.stackQty" @input="numOnly(d,'stackQty'); checkCardField('qty')">
+                  <span class="k">日期</span>
+                  <input v-if="!isMobile" type="date" class="inline-input" :class="{err: dErr.delivery}" v-model="d.delivery" @keydown.prevent @paste.prevent @change="checkCardField('delivery')">
+                  <div v-else class="date-fake" :class="{err: dErr.delivery, empty: !d.delivery}" @click="openPicker('delivery','card')">{{ d.delivery || '' }}</div>
+                </div>
+                <div class="qd-err" v-if="dErr.qty || dErr.delivery">{{ dErr.qty || dErr.delivery }}</div>
               </div>
-              <div class="fld"><div class="ft">其他要求</div><textarea v-model="d.note"></textarea></div>
             </template>
 
-            <!-- 运营方式（单条覆盖） -->
+            <!-- 运营方式（单条覆盖）：显示逻辑、默认选项均与全局设置一致 -->
             <div class="fld" style="border-top:1px dashed var(--line); padding-top:14px;">
               <div class="ft">
                 运营方式
@@ -604,29 +928,38 @@
                 <span class="tip" v-else>已单独设置</span>
               </div>
               <span class="opt" :class="{on: d.op && d.op.useGlobal}" @click="setOpGlobal()"><span class="chk"></span>跟随全局</span>
-              <span class="opt" :class="{on: !(d.op && d.op.useGlobal)}" @click="d.op.useGlobal=false"><span class="chk"></span>单独设置</span>
+              <span class="opt" :class="{on: d.op && !d.op.useGlobal}" @click="setOpOwn()"><span class="chk"></span>单独设置</span>
+
               <div v-if="d.op && !d.op.useGlobal" style="margin-top:8px;">
                 <div class="grow">
-                  <span class="k">运行方式：</span>
+                  <span class="k">运行方式</span>
                   <span class="opt" :class="{on: d.op.run==='standalone'}" @click="d.op.run='standalone'"><span class="chk"></span>单机使用</span>
                   <span class="opt" :class="{on: d.op.run==='network'}" @click="d.op.run='network'"><span class="chk"></span>联网使用</span>
                 </div>
-                <div class="grow">
-                  <span class="k">单机方式：</span>
+                <div class="grow" v-if="d.op.run==='standalone'">
+                  <span class="k">单机方式</span>
                   <span class="opt" :class="{on: d.op.single==='card'}" @click="d.op.single='card'"><span class="chk"></span>刷卡启动（送二张卡）</span>
+                  <span class="opt" :class="{on: d.op.single==='plug'}" @click="d.op.single='plug'"><span class="chk"></span>即插即充</span>
                   <span class="opt" :class="{on: d.op.single==='other'}" @click="d.op.single='other'"><span class="chk"></span>其他</span>
                 </div>
-                <div class="grow">
-                  <span class="k">联网方式：</span>
-                  <span class="opt" :class="{on: d.op.net==='iot'}" @click="d.op.net='iot'"><span class="chk"></span>物联网卡（免费送二年）</span>
-                  <span class="opt" :class="{on: d.op.net==='ethernet'}" @click="d.op.net='ethernet'"><span class="chk"></span>以太网</span>
-                  <span class="opt" :class="{on: d.op.net==='other'}" @click="d.op.net='other'"><span class="chk"></span>其他</span>
-                </div>
-                <div class="grow">
-                  <span class="k">平台选择：</span>
-                  <span class="opt" :class="{on: d.op.platform==='yunkuai'}" @click="d.op.platform='yunkuai'"><span class="chk"></span>默认（云快充）</span>
-                  <span class="opt" :class="{on: d.op.platform==='other'}" @click="d.op.platform='other'"><span class="chk"></span>其他</span>
-                  <input type="text" class="other-input" v-model="d.op.platformOtherText" placeholder="____">
+                <template v-if="d.op.run==='network'">
+                  <div class="grow">
+                    <span class="k">联网方式</span>
+                    <span class="opt" :class="{on: d.op.net==='iot'}" @click="d.op.net='iot'"><span class="chk"></span>物联网卡（免费送二年）</span>
+                    <span class="opt" :class="{on: d.op.net==='ethernet'}" @click="d.op.net='ethernet'"><span class="chk"></span>以太网</span>
+                    <span class="opt" :class="{on: d.op.net==='other'}" @click="d.op.net='other'"><span class="chk"></span>其他</span>
+                    <input type="text" class="other-input" v-if="d.op.net==='other'" v-model="d.op.networkingOtherText">
+                  </div>
+                  <div class="grow">
+                    <span class="k">平台选择</span>
+                    <span class="opt" :class="{on: d.op.platform==='yunkuai'}" @click="d.op.platform='yunkuai'"><span class="chk"></span>默认（云快充）</span>
+                    <span class="opt" :class="{on: d.op.platform==='other'}" @click="d.op.platform='other'"><span class="chk"></span>其他</span>
+                    <input type="text" class="other-input" v-if="d.op.platform==='other'" v-model="d.op.platformOtherText">
+                  </div>
+                </template>
+                <div class="op-cell light">
+                  <div class="ct"><span class="dot"></span>其他指定要求</div>
+                  <textarea class="op-note-light" v-model="d.op.note" placeholder="填写其他指定要求…"></textarea>
                 </div>
               </div>
             </div>
@@ -639,22 +972,82 @@
         </div>
       </div>
     </div>
+
+    <!-- 移动端日期滚轮选择器 -->
+    <div class="dp-mask" v-if="dp.open" @click.self="closePicker">
+      <div class="dp-sheet">
+        <div class="dp-head">
+          <button class="dp-cancel" @click="closePicker">取消</button>
+          <b>选择日期</b>
+          <button class="dp-ok" @click="confirmPicker">确定</button>
+        </div>
+        <div class="dp-cols">
+          <div class="dp-band"></div>
+          <div class="dp-col" data-kind="y" @scroll.passive="onColScroll('y', $event)">
+            <div class="dp-pad"></div>
+            <div v-for="y in years" :key="'y'+y" class="dp-cell" :class="{active: y===dp.y}">{{ y }}年</div>
+            <div class="dp-pad"></div>
+          </div>
+          <div class="dp-col" data-kind="m" @scroll.passive="onColScroll('m', $event)">
+            <div class="dp-pad"></div>
+            <div v-for="m in 12" :key="'m'+m" class="dp-cell" :class="{active: m===dp.m}">{{ m }}月</div>
+            <div class="dp-pad"></div>
+          </div>
+          <div class="dp-col" data-kind="d" @scroll.passive="onColScroll('d', $event)">
+            <div class="dp-pad"></div>
+            <div v-for="d in daysIn(dp.y, dp.m)" :key="'d'+d" class="dp-cell" :class="{active: d===dp.d}">{{ d }}日</div>
+            <div class="dp-pad"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const { createApp, reactive, computed } = Vue;
+    const { createApp, reactive, computed, ref, nextTick } = Vue;
     let uid = 0;
     const nextId = () => 'c' + (++uid);
 
+    // 运营方式默认选项：全局与单条覆盖共用同一套默认值
+    function defaultOp() {
+      return {
+        run:'network', single:'card', net:'iot', platform:'yunkuai',
+        platformOtherText:'', networkingOtherText:'', note:''
+      };
+    }
     function newOp() {
-      return { useGlobal: true, run:'', single:'', net:'', platform:'', platformOtherText:'' };
+      return Object.assign({ useGlobal: true }, defaultOp());
     }
     function blankCard(type) {
       switch(type) {
-        case 'acWall': return { id: nextId(), power:'7', powerOtherText:'', screen:'no', g4:'', mount:'wall', qty:'', delivery:'', note:'', op: newOp() };
-        case 'acInt': return { id: nextId(), power:'7', powerOtherText:'', mount:'integrated', note:'', op: newOp() };
-        case 'dc': return { id: nextId(), power:'60', powerOtherText:'', gun:'double', gunOtherText:'', mount:'post', mountOtherText:'', otherReq:'default', note:'', op: newOp() };
-        case 'group': return { id: nextId(), power:'480', powerOtherText:'', term:'doubleAir', termOtherText:'', airCur:'250', airQty250:'', airQty300:'', liquid600On:false, liquidQty600:'', liquidOtherOn:false, liquidCurOtherText:'', liquidQtyOther:'', stackQty:'', delivery:'', note:'', op: newOp() };
+        // 国标交流：品牌 / 类型（壁挂·一体），壁挂看标准·屏幕·安装，一体看功率·标准·屏幕
+        case 'gbAc': return {
+          id: nextId(), brand:'xinch', brandOtherText:'',
+          kind:'wall', std:'old', screen:'nonTouch', mount:'wall', power:'14',
+          qty:'', delivery:'', note:'', op: newOp()
+        };
+        // 欧标交流：品牌 / 功率 / 功能（多选，默认都不选）
+        case 'euAc': return {
+          id: nextId(), brand:'xinch', brandOtherText:'',
+          power:'7', funcs: [],
+          qty:'', delivery:'', note:'', op: newOp()
+        };
+        // 直流一体：品牌 / 功率 / 枪数 / 屏幕 / 亮度 / 挡板 / 3C（含壳体·枪线·模块）/ 备注 / 数量·日期
+        case 'dc': return {
+          id: nextId(), brand:'xinch', brandOtherText:'',
+          power:'120', gun:'double',
+          screen:'external', bright:'standard', baffle:'acrylic',
+          c3:'full', c3Shell:'notRequired', c3Cable:'notRequired', c3Module:'notRequired',
+          qty:'', delivery:'', note:'', op: newOp()
+        };
+        // 群充产品：品牌 / 功率 / 枪数（主柜固定参数）+ 终端混配清单 + 整堆数量 / 交货
+        case 'group': return {
+          id: nextId(), brand:'xinch', brandOtherText:'',
+          power:'480', powerOtherText:'',
+          gunTotal:'8', gunTotalOtherText:'',
+          terminals: { singleAir250:'', singleAir300:'', doubleAir250:'', doubleAir300:'', liquid600:'' },
+          stackQty:'', delivery:'', note:'', op: newOp()
+        };
       }
     }
 
@@ -667,67 +1060,192 @@
     createApp({
       setup() {
         const form = reactive({
-          userUnit:'', customer:'', project:'', orderDate:'', orderQty:'', deliveryDate:'',
-          contact:'', address:'',
-          acWall: [], acInt: [], dc: [], group: [], special:''
+          orderDate:'', orderQty:'', project:'', address:'',
+          customer:'', customerPhone:'', ownerUnit:'', ownerPhone:'', deliveryDate:'',
+          gbAc: [], euAc: [], dc: [], group: [], special:''
         });
-        const globalOp = reactive({ run:'network', single:'card', net:'iot', platform:'yunkuai', platformOtherText:'', note:'' });
+        const errors = reactive({});
+        const PHONE_RE = /^1[3-9]\d{9}$/;
+        const REQUIRED = {
+          orderDate:'请选择订货日期', orderQty:'请填写订货台数', project:'请填写项目名称',
+          address:'请填写项目地址', customer:'请填写客户单位', ownerUnit:'请填写业主单位',
+          deliveryDate:'请选择交货日期'
+        };
+        const CHECK_ORDER = ['orderDate','orderQty','project','address','customer','customerPhone','ownerUnit','ownerPhone','deliveryDate'];
+
+        function checkField(k) {
+          const v = (form[k] === null || form[k] === undefined) ? '' : String(form[k]).trim();
+          errors[k] = '';
+          if (REQUIRED[k] && !v) { errors[k] = REQUIRED[k]; return false; }
+          if (k === 'orderQty' && v) {
+            if (!/^\d+$/.test(v) || Number(v) <= 0) { errors[k] = '订货台数需为正整数'; return false; }
+          }
+          if ((k === 'customerPhone' || k === 'ownerPhone') && v) {
+            if (!PHONE_RE.test(v)) { errors[k] = '手机号格式不正确（11位，1开头）'; return false; }
+          }
+          if (k === 'deliveryDate' && v && form.orderDate && v < form.orderDate) {
+            errors[k] = '交货日期不能早于订货日期'; return false;
+          }
+          return true;
+        }
+        function validateAll() {
+          let ok = true;
+          CHECK_ORDER.forEach(k => { if (!checkField(k)) ok = false; });
+          return ok;
+        }
+        const globalOp = reactive({ run:'network', single:'card', net:'iot', platform:'yunkuai', platformOtherText:'', networkingOtherText:'', note:'' });
         const modal = reactive({ open:false, type:'', index:-1, title:'' });
+        const opEditing = ref(false);
         const d = reactive({});
+        // 弹窗内「数量 / 日期」必填校验的错误信息
+        const dErr = reactive({ qty:'', delivery:'' });
+        function clearCardErr() { dErr.qty = ''; dErr.delivery = ''; }
+        // 群充的「数量」落在 stackQty，其余类型落在 qty
+        function qtyFieldKey() { return modal.type === 'group' ? 'stackQty' : 'qty'; }
+        function checkCardField(k) {
+          const key = (k === 'qty') ? qtyFieldKey() : k;
+          const v = (d[key] === null || d[key] === undefined) ? '' : String(d[key]).trim();
+          dErr[k] = '';
+          if (!v) { dErr[k] = (k === 'qty' ? '请填写数量' : '请选择日期'); return false; }
+          if (k === 'qty' && (!/^\d+$/.test(v) || Number(v) <= 0)) { dErr[k] = '数量需为大于 0 的整数'; return false; }
+          return true;
+        }
+        // 返回 { ok, msg }
+        function checkCardQtyDate() {
+          const a = checkCardField('qty');
+          const b = checkCardField('delivery');
+          if (a && b) return { ok:true, msg:'' };
+          return { ok:false, msg: dErr.qty || dErr.delivery };
+        }
 
-        const typeName = { acWall:'交流壁挂式', acInt:'交流一体式', dc:'直流一体桩', group:'群充产品' };
-        const totalCount = computed(() => form.acWall.length + form.acInt.length + form.dc.length + form.group.length);
-
-        const dcSingleGunOnly = computed(() => d.power === '30' || d.power === '40');
-        const dcCanWall = computed(() => d.power === '30' || d.power === '40');
-        // 电流互斥规则：风冷→250/300A（单选）；液冷→600A；其他→其他
-        const curCanAir = computed(() => d.term === 'singleAir' || d.term === 'doubleAir');
-        const curCanLiquid = computed(() => d.term === 'singleLiquid');
-        const curCanOther = computed(() => d.term === 'other');
-        const curHint = computed(() => {
-          if (curCanLiquid.value) return '液冷终端，仅可选择 600A(液冷)';
-          if (curCanAir.value) return '风冷终端，250A / 300A 二选一';
-          if (curCanOther.value) return '其他终端，仅可选择「其他」';
-          return '请先选择终端类型';
+        /* 移动端日期滚轮 */
+        const isMobile = ref(window.innerWidth <= 640);
+        window.addEventListener('resize', () => { isMobile.value = window.innerWidth <= 640; });
+        const ITEM_H = 40;
+        const dp = reactive({ open:false, target:'', scope:'form', y:0, m:1, d:1, lock:false });
+        const years = computed(() => {
+          const now = new Date().getFullYear();
+          const arr = [];
+          for (let y = now - 5; y <= now + 6; y++) arr.push(y);
+          return arr;
         });
-        function setAirCur(v) {
-          if (!curCanAir.value) return;
-          d.airCur = v;
+        function daysIn(y, m) { return new Date(y, m, 0).getDate(); }
+        function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+        function todayStr() { const t = new Date(); return t.getFullYear() + '-' + pad2(t.getMonth() + 1) + '-' + pad2(t.getDate()); }
+        form.orderDate = todayStr();
+        function scrollCol(kind, idx) {
+          const el = document.querySelector('.dp-col[data-kind="' + kind + '"]');
+          if (el) el.scrollTop = Math.max(0, idx) * ITEM_H;
         }
-        function toggleCur(k) {
-          if (k === 'liquid600') { if (!curCanLiquid.value) return; d.liquid600On = !d.liquid600On; }
-          else if (k === 'liquidOther') { if (!curCanOther.value) return; d.liquidOtherOn = !d.liquidOtherOn; }
+        // scope: 'form' 走订货信息，'card' 走弹窗里的卡片字段
+        function openPicker(key, scope) {
+          const src = (scope === 'card') ? d : form;
+          const v = src[key] || todayStr();
+          const p = v.split('-').map(Number);
+          dp.target = key;
+          dp.scope = scope || 'form';
+          dp.y = p[0]; dp.m = p[1]; dp.d = p[2];
+          dp.open = true;
+          nextTick(() => {
+            scrollCol('y', years.value.indexOf(dp.y));
+            scrollCol('m', dp.m - 1);
+            scrollCol('d', dp.d - 1);
+          });
         }
-        function setGroupTerm(t) {
-          d.term = t;
-          // 切换终端类型时，重置电流为符合当前类型的默认
-          if (t === 'singleAir' || t === 'doubleAir') {
-            d.airCur = '250'; d.liquid600On = false; d.liquidOtherOn = false;
-          } else if (t === 'singleLiquid') {
-            d.airCur = ''; d.liquid600On = true; d.liquidOtherOn = false;
-          } else if (t === 'other') {
-            d.airCur = ''; d.liquid600On = false; d.liquidOtherOn = true;
-          } else {
-            d.airCur = ''; d.liquid600On = false; d.liquidOtherOn = false;
+        function onColScroll(kind, e) {
+          if (dp.lock) return;
+          const idx = Math.max(0, Math.round(e.target.scrollTop / ITEM_H));
+          if (kind === 'y') { const y = years.value[idx]; if (y) dp.y = y; }
+          else if (kind === 'm') dp.m = Math.min(12, Math.max(1, idx + 1));
+          else dp.d = Math.min(daysIn(dp.y, dp.m), Math.max(1, idx + 1));
+          if (kind !== 'd') {
+            const maxD = daysIn(dp.y, dp.m);
+            if (dp.d > maxD) {
+              dp.d = maxD; dp.lock = true;
+              nextTick(() => { scrollCol('d', maxD - 1); setTimeout(() => { dp.lock = false; }, 150); });
+            }
           }
         }
+        function confirmPicker() {
+          const src = (dp.scope === 'card') ? d : form;
+          src[dp.target] = dp.y + '-' + pad2(dp.m) + '-' + pad2(dp.d);
+          dp.open = false;
+          if (dp.scope === 'card') { checkCardField(dp.target); return; }
+          checkField(dp.target);
+        }
+        function closePicker() { dp.open = false; }
+
+        const opText = computed(() => {
+          const g = globalOp;
+          const runLabel = g.run === 'standalone' ? '单机使用' : (g.run === 'network' ? '联网使用' : '—');
+          const singleLabel = g.single === 'card' ? '刷卡启动（送二张卡）'
+            : g.single === 'plug' ? '即插即充'
+            : (g.single === 'other' ? '其他' : '—');
+          const netLabel = g.net === 'iot' ? '物联网卡（免费送二年）'
+            : g.net === 'ethernet' ? '以太网'
+            : g.net === 'other' ? ('其他' + (g.networkingOtherText ? '：' + g.networkingOtherText : '')) : '—';
+          const platformLabel = g.platform === 'yunkuai' ? '默认（云快充）'
+            : g.platform === 'other' ? ('其他' + (g.platformOtherText ? '：' + g.platformOtherText : '')) : '—';
+          return { run: runLabel, single: singleLabel, net: netLabel, platform: platformLabel };
+        });
+
+        const typeName = { gbAc:'国标交流', euAc:'欧标交流', dc:'直流一体', group:'群充产品' };
+        const totalCount = computed(() => form.gbAc.length + form.euAc.length + form.dc.length + form.group.length);
+
+        // 直流一体：功率档位；枪数按功率联动
+        const dcPowers = ['30','40','60','80','120','160','180','240','320','360','400','480'];
+        // 单枪：30~80kW 可选；双枪：60kW 起（60/80 两者皆可，120 以上仅双枪）
+        const dcCanSingle = computed(() => ['30','40','60','80'].indexOf(d.power) > -1);
+        const dcCanDouble = computed(() => ['30','40'].indexOf(d.power) === -1);
+        const dcGunHint = computed(() => {
+          if (!d.power) return '请先选择功率';
+          if (d.power === '30' || d.power === '40') return '30kW/40kW 仅可选单枪';
+          if (d.power === '60' || d.power === '80') return '60kW/80kW 单枪、双枪均可';
+          return '120kW 及以上仅可选双枪';
+        });
+        // ===== 群充产品：主柜固定参数 + 终端混配清单 =====
+        const groupPowers = ['240','360','480','600','640','720','800','960'];
+        const groupGunOptions = ['4','6','8','10','12','14','16'];
+        // 终端规格固定 5 类（guns 用于折算枪数）
+        const groupTermRows = [
+          { key:'singleAir250', label:'单枪风冷 250A', guns:1 },
+          { key:'singleAir300', label:'单枪风冷 300A', guns:1 },
+          { key:'doubleAir250', label:'双枪风冷 250A', guns:2 },
+          { key:'doubleAir300', label:'双枪风冷 300A', guns:2 },
+          { key:'liquid600',    label:'单枪液冷 600A', guns:1 }
+        ];
+        function termQtyOf(ts) {
+          return groupTermRows.reduce((s, t) => s + (parseInt(ts && ts[t.key], 10) || 0), 0);
+        }
+        function termGunOf(ts) {
+          return groupTermRows.reduce((s, t) => s + (parseInt(ts && ts[t.key], 10) || 0) * t.guns, 0);
+        }
+        const groupTermQty = computed(() => termQtyOf(d.terminals));
+        const groupGunSum = computed(() => termGunOf(d.terminals));
+        // 主柜枪数上限：选「其他」时取手填数字，未填或非法则不限制
+        const groupGunLimit = computed(() => {
+          const raw = d.gunTotal === 'other' ? d.gunTotalOtherText : d.gunTotal;
+          const n = parseInt(raw, 10);
+          return isNaN(n) ? null : n;
+        });
+        // 终端清单折算的枪数不得大于主柜枪数
+        const groupGunOver = computed(() => groupGunLimit.value !== null && groupGunSum.value > groupGunLimit.value);
         function setDcPower(p) {
           d.power = p;
-          if (dcSingleGunOnly.value && d.gun !== 'single') d.gun = 'single';
-          if (!dcCanWall.value && d.mount === 'wall') d.mount = 'post';
+          // 枪数按新功率收敛：30/40 只能单枪，120 以上只能双枪
+          if (!dcCanSingle.value && d.gun === 'single') d.gun = 'double';
+          if (!dcCanDouble.value && d.gun === 'double') d.gun = 'single';
         }
         function setDcGun(g) {
-          if (dcSingleGunOnly.value && g !== 'single') return;
+          if (g === 'single' && !dcCanSingle.value) return;
+          if (g === 'double' && !dcCanDouble.value) return;
           d.gun = g;
-        }
-        function setDcMount(m) {
-          if (!dcCanWall.value && m === 'wall') return;
-          d.mount = m;
         }
 
         function startAdd() {
           modal.type = ''; modal.index = -1;
           modal.title = '新增产品 · 请选择类型';
+          clearCardErr();
           modal.open = true;
         }
         function pickType(type) {
@@ -737,10 +1255,12 @@
           Object.keys(d).forEach(k => delete d[k]);
           const c = blankCard(type);
           Object.assign(d, JSON.parse(JSON.stringify(c)));
+          clearCardErr();
         }
         function backToType() {
           modal.type = '';
           modal.title = '新增产品 · 请选择类型';
+          clearCardErr();
         }
         function editCard(type, i) {
           modal.type = type; modal.index = i;
@@ -749,11 +1269,43 @@
           Object.keys(d).forEach(k => delete d[k]);
           Object.assign(d, JSON.parse(JSON.stringify(src)));
           d.op = d.op || newOp();
+          clearCardErr();
+          modal.open = true;
         }
         function closeModal() { modal.open = false; }
         function setOpGlobal() { d.op.useGlobal = true; }
+        // 点「单独设置」：缺省项按全局当前配置补齐（全局也没选则用同一套默认值）
+        function setOpOwn() {
+          if (!d.op) d.op = newOp();
+          const g = globalOp;
+          if (!d.op.run) d.op.run = g.run || 'network';
+          if (!d.op.single) d.op.single = g.single || 'card';
+          if (!d.op.net) d.op.net = g.net || 'iot';
+          if (!d.op.platform) d.op.platform = g.platform || 'yunkuai';
+          if (d.op.networkingOtherText === undefined) d.op.networkingOtherText = g.networkingOtherText || '';
+          if (d.op.platformOtherText === undefined) d.op.platformOtherText = g.platformOtherText || '';
+          if (d.op.note === undefined) d.op.note = '';
+          d.op.useGlobal = false;
+        }
 
         function confirmModal() {
+          const qd = checkCardQtyDate();
+          if (!qd.ok) {
+            alert(qd.msg);
+            return;
+          }
+          if (modal.type === 'gbAc' && !d.kind) {
+            alert('请先选择类型：壁挂 / 一体');
+            return;
+          }
+          if (modal.type === 'group' && termQtyOf(d.terminals) === 0) {
+            alert('请至少配置一种终端（填写数量）');
+            return;
+          }
+          if (modal.type === 'group' && groupGunOver.value) {
+            alert('终端清单合计 ' + groupGunSum.value + ' 枪，超过主柜枪数 ' + groupGunLimit.value + ' 枪，\n请减少终端数量，或把主柜枪数改大。');
+            return;
+          }
           if (modal.index >= 0) {
             const src = form[modal.type][modal.index];
             Object.keys(src).forEach(k => delete src[k]);
@@ -765,78 +1317,167 @@
         }
 
         function powerLabel(c, type) {
-          if (type==='acWall') return optText('power', c.power, c.powerOtherText, { '7':'7kW圆梦款' });
-          if (type==='acInt') return optText('power', c.power, c.powerOtherText, { '7':'7kW', '14':'14kW(双枪)' });
           if (type==='dc') return optText('power', c.power, c.powerOtherText, null) + (c.power && c.power!=='other' ? 'kW' : '');
           if (type==='group') return optText('power', c.power, c.powerOtherText, null) + (c.power && c.power!=='other' ? 'kW' : '');
           return '';
         }
-        function funcLabel(c) {
-          const parts = [];
-          if (c.screen) parts.push(c.screen==='yes' ? '带屏幕' : '不带屏幕');
-          if (c.g4) parts.push(c.g4==='yes' ? '带4G运营' : '不带4G运营');
-          return parts.join(' / ');
-        }
-        function mountLabel(c, type) {
-          if (type==='acWall') return optText('mount', c.mount, '', { wall:'壁挂式', post:'带立柱' });
-          if (type==='acInt') return c.mount==='integrated' ? '一体式' : '';
-          if (type==='dc') return optText('mount', c.mount, c.mountOtherText, { wall:'壁挂式（40KW以下）', post:'立柱式' });
+        /* ===== 品牌 / 直流外观项 ===== */
+        function brandLabel(c) {
+          if (c.brand === 'xinch') return '新驰';
+          if (c.brand === 'jiasheng') return '迦晟';
+          if (c.brand === 'zhengtai') return '正泰';
+          if (c.brand === 'jiyeda') return '基业达';
+          if (c.brand === 'other') return c.brandOtherText ? '其他：' + c.brandOtherText : '其他';
           return '';
         }
-        function gunLabel(c) { return optText('gun', c.gun, c.gunOtherText, { single:'单枪', double:'双枪' }); }
-        function otherReqLabel(c) { return c.otherReq==='default' ? '默认' : (c.otherReq==='other' ? '其他' : ''); }
-        function termLabel(c) { return optText('term', c.term, c.termOtherText, { singleAir:'单枪风冷', doubleAir:'双枪风冷', singleLiquid:'单枪液冷' }); }
-        function curLabel(c) {
+        function dcScreenLabel(c) {
+          if (c.screen === 'external') return '外置';
+          if (c.screen === 'internal') return '内置';
+          return '';
+        }
+        function dcBrightLabel(c) {
+          if (c.bright === 'standard') return '标准亮度';
+          if (c.bright === 'high') return '高亮';
+          return '';
+        }
+        function dcBaffleLabel(c) {
+          if (c.baffle === 'acrylic') return '亚克力板';
+          if (c.baffle === 'glass') return '玻璃一体屏';
+          return '';
+        }
+        function c3Label(c) {
+          if (c.c3 === 'full') return '完全符合';
+          if (c.c3 === 'notRequired') return '不用符合';
+          return '';
+        }
+        // 3C 选「不用符合」时，展开壳体/枪线/模块的逐项结论
+        function c3Detail(c) {
+          if (c.c3 !== 'notRequired') return '';
+          const one = v => (v === 'full' ? '符合' : '不用符合');
+          return '壳体' + one(c.c3Shell) + ' · 枪线' + one(c.c3Cable) + ' · 模块' + one(c.c3Module);
+        }
+        function gbKindLabel(c) {
+          if (c.kind === 'wall') return '壁挂';
+          if (c.kind === 'integrated') return '一体';
+          return '';
+        }
+        function stdLabel(c) {
+          if (c.std === 'new') return '新国标';
+          if (c.std === 'old') return '旧国标';
+          return '';
+        }
+        function screenLabel(c) {
+          if (c.screen === 'none') return '不带屏幕';
+          if (c.screen === 'nonTouch') return '非触摸屏';
+          if (c.screen === 'touch') return '触摸屏';
+          return '';
+        }
+        function mountAcLabel(c) {
+          if (c.mount === 'wall') return '壁挂';
+          if (c.mount === 'post') return '立柱';
+          return '';
+        }
+        function euPowerLabel(c) { return c.power ? c.power + 'kW' : ''; }
+        function euFuncLabel(c) {
+          const list = c.funcs || [];
           const parts = [];
-          if (c.airCur === '250') parts.push('250A' + (c.airQty250 ? '×' + c.airQty250 : ''));
-          else if (c.airCur === '300') parts.push('300A' + (c.airQty300 ? '×' + c.airQty300 : ''));
-          if (c.liquid600On) parts.push('600A(液冷)' + (c.liquidQty600 ? '×' + c.liquidQty600 : ''));
-          if (c.liquidOtherOn) parts.push('其他' + (c.liquidCurOtherText ? '：' + c.liquidCurOtherText : '') + (c.liquidQtyOther ? '×' + c.liquidQtyOther : ''));
+          if (list.indexOf('bld') > -1) parts.push('带BLD');
+          if (list.indexOf('meter') > -1) parts.push('电表');
+          return parts.join(' · ');
+        }
+        function toggleEuFunc(k) {
+          if (!Array.isArray(d.funcs)) d.funcs = [];
+          const i = d.funcs.indexOf(k);
+          if (i > -1) d.funcs.splice(i, 1);
+          else d.funcs.push(k);
+        }
+        // 台数只允许数字
+        function numOnly(obj, key) {
+          const v = String(obj[key] === undefined || obj[key] === null ? '' : obj[key]);
+          obj[key] = v.replace(/[^\d]/g, '');
+        }
+        function gunLabel(c) { return optText('gun', c.gun, c.gunOtherText, { single:'单枪', double:'双枪' }); }
+        // 群充：主柜枪数
+        function gunTotalLabel(c) {
+          if (c.gunTotal === 'other') return c.gunTotalOtherText ? '其他：' + c.gunTotalOtherText : '其他';
+          return c.gunTotal ? c.gunTotal + ' 枪' : '';
+        }
+        // 群充：终端混配清单文案，如「单枪风冷250A×2 · 双枪风冷250A×1」
+        function groupTermText(c) {
+          const ts = c && c.terminals;
+          if (!ts) return '';
+          const parts = [];
+          groupTermRows.forEach(t => {
+            const n = parseInt(ts[t.key], 10) || 0;
+            if (n > 0) parts.push(t.label.replace(/\s+/g, '') + '×' + n);
+          });
           return parts.join(' · ');
         }
 
+        // 运营方式文案：全局与单条覆盖共用同一套生成逻辑（按运行方式互斥输出）
+        function opParts(o) {
+          if (!o) return '';
+          const parts = [];
+          if (o.run === 'standalone') {
+            parts.push('单机');
+            if (o.single === 'card') parts.push('刷卡启动');
+            else if (o.single === 'plug') parts.push('即插即充');
+            else if (o.single === 'other') parts.push('单机其他');
+          } else if (o.run === 'network') {
+            parts.push('联网');
+            if (o.net === 'iot') parts.push('物联网卡');
+            else if (o.net === 'ethernet') parts.push('以太网');
+            else if (o.net === 'other') parts.push('联网其他' + (o.networkingOtherText ? '：' + o.networkingOtherText : ''));
+            if (o.platform === 'yunkuai') parts.push('云快充');
+            else if (o.platform === 'other') parts.push('平台:' + (o.platformOtherText || '其他'));
+          }
+          return parts.join(' · ');
+        }
         function opLabel(op) {
           if (!op) return '—';
-          if (op.useGlobal) return summarizeOp(globalOp) || '跟随全局（未选择）';
-          const parts = [];
-          if (op.run) parts.push(op.run==='standalone'?'单机':'联网');
-          if (op.single==='card') parts.push('刷卡启动');
-          if (op.net==='iot') parts.push('物联网卡');
-          else if (op.net==='ethernet') parts.push('以太网');
-          if (op.platform==='yunkuai') parts.push('云快充');
-          else if (op.platform==='other') parts.push('平台:'+(op.platformOtherText||'其他'));
-          return parts.length ? parts.join(' · ') : '—';
-        }
-        function summarizeOp(g) {
-          const parts = [];
-          if (g.run) parts.push(g.run==='standalone'?'单机':'联网');
-          if (g.single==='card') parts.push('刷卡启动');
-          else if (g.single==='other') parts.push('单机其他');
-          if (g.net==='iot') parts.push('物联网卡');
-          else if (g.net==='ethernet') parts.push('以太网');
-          else if (g.net==='other') parts.push('联网其他');
-          if (g.platform==='yunkuai') parts.push('云快充');
-          else if (g.platform==='other') parts.push('平台:'+(g.platformOtherText||'其他'));
-          return parts.length ? '跟随全局：' + parts.join(' · ') : '';
+          if (op.useGlobal) {
+            const g = opParts(globalOp);
+            return g ? '跟随全局：' + g : '跟随全局（未选择）';
+          }
+          return opParts(op) || '—';
         }
 
-        function doPrint() { window.print(); }
+        function doPrint() {
+          if (!validateAll()) {
+            const first = CHECK_ORDER.find(k => errors[k]);
+            alert('还有必填项没填好：' + (errors[first] || '请检查订货信息'));
+            const el = document.querySelector('.info-grid .err');
+            if (el && el.scrollIntoView) el.scrollIntoView({ behavior:'smooth', block:'center' });
+            return;
+          }
+          window.print();
+        }
         function doReset() {
           Object.keys(form).forEach(k => {
             if (Array.isArray(form[k])) form[k] = [];
             else form[k] = '';
           });
-          Object.assign(globalOp, { run:'network', single:'card', net:'iot', platform:'yunkuai', platformOtherText:'', note:'' });
+          Object.keys(errors).forEach(k => errors[k] = '');
+          form.orderDate = todayStr();
+          Object.assign(globalOp, { run:'network', single:'card', net:'iot', platform:'yunkuai', platformOtherText:'', networkingOtherText:'', note:'' });
+          opEditing.value = false;
           modal.open = false;
         }
 
         return {
-          form, globalOp, modal, d, totalCount,
-          dcSingleGunOnly, dcCanWall, curCanAir, curCanLiquid, curCanOther, curHint,
-          startAdd, pickType, backToType, editCard, closeModal, confirmModal, setOpGlobal,
-          setDcPower, setDcGun, setDcMount, setAirCur, toggleCur, setGroupTerm,
+          form, globalOp, modal, d, totalCount, opEditing, opText, errors, checkField, validateAll,
+          isMobile, dp, years, daysIn, openPicker, onColScroll, confirmPicker, closePicker, dErr, checkCardField,
+          dcPowers, dcCanSingle, dcCanDouble, dcGunHint,
+          groupPowers, groupGunOptions, groupTermRows, groupTermQty, groupGunSum,
+          groupGunLimit, groupGunOver,
+          termQtyOf, termGunOf, gunTotalLabel, groupTermText,
+          startAdd, pickType, backToType, editCard, closeModal, confirmModal, setOpGlobal, setOpOwn,
+          setDcPower, setDcGun,
           doPrint, doReset,
-          powerLabel, funcLabel, mountLabel, gunLabel, otherReqLabel, termLabel, curLabel, opLabel
+          powerLabel, gunLabel, opLabel,
+          brandLabel, gbKindLabel, stdLabel, screenLabel, mountAcLabel, euPowerLabel, euFuncLabel,
+          dcScreenLabel, dcBrightLabel, dcBaffleLabel, c3Label, c3Detail,
+          toggleEuFunc, numOnly
         };
       }
     }).mount('#app');
